@@ -23,7 +23,7 @@ class MobileStreamingController(context: Context) : ConnectChecker {
         _state.value = MobileStreamState.PREPARING
         return try {
             val videoOk = rtmpStream.prepareVideo(width, height, fps, videoBitrate)
-            val audioOk = rtmpStream.prepareAudio(128_000, 44_100, true)
+            val audioOk = rtmpStream.prepareAudio(128_000, 44_100, false)
             val ok = videoOk && audioOk
             if (!ok) { _state.value = MobileStreamState.FAILED; _message.value = "Device encoder preparation failed" }
             ok
@@ -45,7 +45,7 @@ class MobileStreamingController(context: Context) : ConnectChecker {
     }
 
     fun stop() {
-        try { if (rtmpStream.isStreaming) rtmpStream.stopStream(); if (rtmpStream.isOnPreview) rtmpStream.stopCamera() } catch (e: Exception) { Log.e("MobileStreaming", "stop failed", e) }
+        try { if (rtmpStream.isStreaming) rtmpStream.stopStream(); if (rtmpStream.isOnPreview) rtmpStream.stopPreview() } catch (e: Exception) { Log.e("MobileStreaming", "stop failed", e) }
         _state.value = MobileStreamState.IDLE; _message.value = ""
     }
 
