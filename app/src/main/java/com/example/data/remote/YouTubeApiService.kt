@@ -47,7 +47,7 @@ interface YouTubeApiService {
         @Query("part") part: String = "snippet,liveStreamingDetails,statistics",
         @Header("Authorization") bearerToken: String? = null,
         @Query("id") videoId: String,
-        @Query("key") apiKey: String
+        @Query("key") apiKey: String? = null
     ): Response<YouTubeVideoListResponse>
 
     @GET("liveChat/messages")
@@ -56,7 +56,7 @@ interface YouTubeApiService {
         @Query("liveChatId") liveChatId: String,
         @Query("part") part: String = "snippet,authorDetails",
         @Query("pageToken") pageToken: String? = null,
-        @Query("key") apiKey: String
+        @Query("key") apiKey: String? = null
     ): Response<YouTubeLiveChatMessagesResponse>
 
     @POST("liveChat/messages?part=snippet")
