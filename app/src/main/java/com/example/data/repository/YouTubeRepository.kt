@@ -6,6 +6,7 @@ import com.example.data.model.ChatMessage
 import com.example.data.model.LiveStreamInfo
 import com.example.data.model.LivePoll
 import com.example.data.model.PollOption
+import com.example.data.local.SecureTokenStore
 import com.example.data.remote.SendChatMessageRequest
 import com.example.data.remote.SendChatMessageSnippet
 import com.example.data.remote.TextMessageDetails
@@ -39,6 +40,7 @@ sealed class LiveConnectionState {
 class YouTubeRepository(private val context: Context) {
 
     private val sharedPrefs = context.getSharedPreferences("malaram_live_prefs", Context.MODE_PRIVATE)
+    private val secureTokenStore = SecureTokenStore(context)
 
     private val moshi = Moshi.Builder()
         .add(KotlinJsonAdapterFactory())
@@ -78,7 +80,7 @@ class YouTubeRepository(private val context: Context) {
     private val _apiKey = MutableStateFlow(sharedPrefs.getString("api_key", "") ?: "")
     val apiKey: StateFlow<String> = _apiKey.asStateFlow()
 
-    private val _oauthToken = MutableStateFlow(sharedPrefs.getString("oauth_token", "") ?: "")
+    private val _oauthToken = MutableStateFlow(loadOAuthToken())
     val oauthToken: StateFlow<String> = _oauthToken.asStateFlow()
 
     private var chatPollingJob: Job? = null
@@ -88,6 +90,17 @@ class YouTubeRepository(private val context: Context) {
 
     private val _activePoll = MutableStateFlow<LivePoll?>(null)
     val activePoll: StateFlow<LivePoll?> = _activePoll.asStateFlow()
+
+    private fun loadOAuthToken(): String {
+        val secure = secureTokenStore.get()
+        if (secure.isNotBlank()) return secure
+        val legacy = sharedPrefs.getString("oauth_token", "") ?: ""
+        if (legacy.isNotBlank()) {
+            secureTokenStore.save(legacy)
+            sharedPrefs.edit().remove("oauth_token").apply()
+        }
+        return legacy
+    }
 
     init {
         if (_isAccountConnected.value) {
@@ -100,11 +113,12 @@ class YouTubeRepository(private val context: Context) {
         _channelId.value = channelIdVal
         _apiKey.value = apiKeyVal
         _oauthToken.value = tokenVal
+        secureTokenStore.save(tokenVal)
         sharedPrefs.edit()
             .putString("channel_title", channelName)
             .putString("channel_id", channelIdVal)
             .putString("api_key", apiKeyVal)
-            .putString("oauth_token", tokenVal)
+            .remove("oauth_token")
             .apply()
     }
 
@@ -123,6 +137,7 @@ class YouTubeRepository(private val context: Context) {
         _connectionState.value = LiveConnectionState.Disconnected
         _chatMessages.value = emptyList()
         _oauthToken.value = ""
+        secureTokenStore.clear()
         sharedPrefs.edit()
             .putBoolean("is_connected", false)
             .remove("oauth_token")
