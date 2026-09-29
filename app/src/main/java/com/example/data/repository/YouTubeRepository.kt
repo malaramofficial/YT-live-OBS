@@ -27,7 +27,6 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.TimeUnit
-import kotlin.random.Random
 
 sealed class LiveConnectionState {
     object Disconnected : LiveConnectionState()
@@ -71,10 +70,10 @@ class YouTubeRepository(private val context: Context) {
     private val _isAccountConnected = MutableStateFlow(sharedPrefs.getBoolean("is_connected", false))
     val isAccountConnected: StateFlow<Boolean> = _isAccountConnected.asStateFlow()
 
-    private val _channelTitle = MutableStateFlow(sharedPrefs.getString("channel_title", "Malaram Official") ?: "Malaram Official")
+    private val _channelTitle = MutableStateFlow(sharedPrefs.getString("channel_title", "") ?: "")
     val channelTitle: StateFlow<String> = _channelTitle.asStateFlow()
 
-    private val _channelId = MutableStateFlow(sharedPrefs.getString("channel_id", "UC_MalaramOfficial_Live") ?: "UC_MalaramOfficial_Live")
+    private val _channelId = MutableStateFlow(sharedPrefs.getString("channel_id", "") ?: "")
     val channelId: StateFlow<String> = _channelId.asStateFlow()
 
     private val _apiKey = MutableStateFlow(sharedPrefs.getString("api_key", "") ?: "")
@@ -84,8 +83,6 @@ class YouTubeRepository(private val context: Context) {
     val oauthToken: StateFlow<String> = _oauthToken.asStateFlow()
 
     private var chatPollingJob: Job? = null
-    private var simulationJob: Job? = null
-    private var isSimulationMode = false
     private var nextPageToken: String? = null
 
     private val _activePoll = MutableStateFlow<LivePoll?>(null)
@@ -149,77 +146,39 @@ class YouTubeRepository(private val context: Context) {
         launchScope.launch {
             _connectionState.value = LiveConnectionState.Checking
             val token = _oauthToken.value.trim()
-            val key = _apiKey.value.trim()
-            val chId = _channelId.value.trim()
-
-            if (token.isNotEmpty()) {
-                try {
-                    val response = apiService.getMyActiveLiveBroadcasts("Bearer $token")
-                    if (response.isSuccessful) {
-                        val broadcast = response.body()?.items?.firstOrNull()
-                        val videoId = broadcast?.id
-                        if (!videoId.isNullOrEmpty()) {
-                            fetchVideoDetails(videoId, key, token)
-                            return@launch
-                        }
-                        _connectionState.value = LiveConnectionState.NoActiveLive(
-                            "आपके YouTube चैनल पर अभी कोई active Live प्रसारण नहीं मिला।"
-                        )
-                        return@launch
-                    } else {
-                        Log.w("YouTubeRepo", "Authenticated live lookup failed: ${response.code()}")
-                    }
-                } catch (e: Exception) {
-                    Log.w("YouTubeRepo", "Authenticated live lookup error: ${e.javaClass.simpleName}")
-                }
+            if (token.isBlank()) {
+                _connectionState.value = LiveConnectionState.Error("YouTube is not connected. Tap Connect YouTube and authorize your Google account.")
+                return@launch
             }
-
-            if (key.isNotEmpty() && chId.isNotEmpty() && !chId.startsWith("UC_MalaramOfficial")) {
-                try {
-                    val searchResponse = apiService.searchLiveVideo(
-                        channelId = chId,
-                        apiKey = key
-                    )
-                    if (searchResponse.isSuccessful) {
-                        val videoItem = searchResponse.body()?.items?.firstOrNull()
-                        val videoId = videoItem?.id?.videoId
-                        if (!videoId.isNullOrEmpty()) {
-                            fetchVideoDetails(videoId, key)
-                            return@launch
-                        } else {
-                            _connectionState.value = LiveConnectionState.NoActiveLive(
-                                "चैनल पर अभी कोई active Live प्रसारण नहीं मिला。"
-                            )
-                            return@launch
-                        }
+            try {
+                val response = apiService.getMyActiveLiveBroadcasts("Bearer $token")
+                if (response.isSuccessful) {
+                    val videoId = response.body()?.items?.firstOrNull()?.id
+                    if (!videoId.isNullOrEmpty()) {
+                        fetchVideoDetails(videoId, token)
                     } else {
-                        Log.w("YouTubeRepo", "API search failed: ${searchResponse.code()}")
+                        _connectionState.value = LiveConnectionState.NoActiveLive("Your YouTube account is connected, but no active Live broadcast was found.")
                     }
-                } catch (e: Exception) {
-                    Log.e("YouTubeRepo", "Error searching live stream", e)
+                } else {
+                    _connectionState.value = LiveConnectionState.Error("YouTube authorization/API error (${response.code()}). ${response.message()}")
                 }
+            } catch (e: Exception) {
+                _connectionState.value = LiveConnectionState.Error("Unable to reach YouTube: ${e.message ?: e.javaClass.simpleName}")
             }
-
-            // If no real API key or no active live broadcast detected on YouTube yet,
-            // provide user clear feedback or option to test live
-            _connectionState.value = LiveConnectionState.NoActiveLive(
-                "कोई सक्रिय YouTube Live नहीं चल रही है। आप नीचे से Test Live मोड शुरू कर सकते हैं या Video ID दर्ज कर सकते हैं।"
-            )
         }
     }
 
     suspend fun checkVideoById(videoId: String, scope: CoroutineScope) {
         _connectionState.value = LiveConnectionState.Checking
-        val key = _apiKey.value.trim()
         val token = _oauthToken.value.trim()
         if (key.isBlank() && token.isBlank()) {
             _connectionState.value = LiveConnectionState.Error(
-                "YouTube authentication required. Connect Google / YouTube or provide an API key."
+                "YouTube authentication required. Connect Google / YouTube first."
             )
             return
         }
         try {
-            fetchVideoDetails(videoId, key, token)
+            fetchVideoDetails(videoId, token)
         } catch (e: Exception) {
             Log.e("YouTubeRepo", "Error checking video ID", e)
             _connectionState.value = LiveConnectionState.Error(
@@ -228,65 +187,48 @@ class YouTubeRepository(private val context: Context) {
         }
     }
 
-    private suspend fun fetchVideoDetails(videoId: String, apiKey: String, bearerToken: String = "") {
-        val detailsResponse = apiService.getVideoDetails(
-            bearerToken = bearerToken.takeIf { it.isNotBlank() }?.let { "Bearer $it" },
-            videoId = videoId,
-            apiKey = apiKey
-        )
-        if (detailsResponse.isSuccessful) {
-            val video = detailsResponse.body()?.items?.firstOrNull()
-            if (video != null) {
-                val liveDetails = video.liveStreamingDetails
-                val isLiveNow = liveDetails?.actualStartTime != null
-                val streamInfo = LiveStreamInfo(
-                    videoId = videoId,
-                    title = video.snippet?.title ?: "Malaram Live Stream",
-                    channelTitle = video.snippet?.channelTitle ?: _channelTitle.value,
-                    channelId = video.snippet?.channelId ?: "",
-                    thumbnailUrl = video.snippet?.thumbnails?.high?.url
-                        ?: video.snippet?.thumbnails?.medium?.url ?: "",
-                    isLive = isLiveNow,
-                    viewerCount = liveDetails?.concurrentViewers?.toLongOrNull() ?: 1L,
-                    likeCount = video.statistics?.likeCount?.toLongOrNull() ?: 0L,
-                    startedAt = System.currentTimeMillis(),
-                    activeLiveChatId = liveDetails?.activeLiveChatId ?: ""
-                )
-                if (isLiveNow) {
-                    _connectionState.value = LiveConnectionState.Active(streamInfo)
-                    if (streamInfo.activeLiveChatId.isNotEmpty()) {
-                        startRealChatPolling(streamInfo.activeLiveChatId, apiKey, bearerToken)
-                    }
-                } else {
-                    _connectionState.value = LiveConnectionState.NoActiveLive(
-                        "यह वीडियो लाइव नहीं है।"
-                    )
-                }
-            } else {
-                _connectionState.value = LiveConnectionState.NoActiveLive("वीडियो नहीं मिला।")
-            }
-        } else {
-            _connectionState.value = LiveConnectionState.Error("API त्रुटि: ${detailsResponse.message()}")
+    private suspend fun fetchVideoDetails(videoId: String, bearerToken: String) {
+        val response = apiService.getVideoDetails(bearerToken = "Bearer $bearerToken", videoId = videoId)
+        if (!response.isSuccessful) {
+            _connectionState.value = LiveConnectionState.Error("YouTube video lookup failed (${response.code()}). ${response.message()}")
+            return
         }
-    }
-
-    fun startLiveStream(streamInfo: LiveStreamInfo, scope: CoroutineScope) {
-        stopChatPolling()
+        val video = response.body()?.items?.firstOrNull()
+        if (video == null) {
+            _connectionState.value = LiveConnectionState.NoActiveLive("YouTube did not return the active broadcast.")
+            return
+        }
+        val details = video.liveStreamingDetails
+        val streamInfo = LiveStreamInfo(
+            videoId = videoId,
+            title = video.snippet?.title ?: "",
+            channelTitle = video.snippet?.channelTitle ?: "",
+            channelId = video.snippet?.channelId ?: "",
+            thumbnailUrl = video.snippet?.thumbnails?.high?.url ?: video.snippet?.thumbnails?.medium?.url ?: "",
+            isLive = details?.actualStartTime != null,
+            viewerCount = details?.concurrentViewers?.toLongOrNull() ?: 0L,
+            likeCount = video.statistics?.likeCount?.toLongOrNull() ?: 0L,
+            startedAt = System.currentTimeMillis(),
+            activeLiveChatId = details?.activeLiveChatId ?: ""
+        )
+        if (!streamInfo.isLive) {
+            _connectionState.value = LiveConnectionState.NoActiveLive("The selected YouTube broadcast is not live right now.")
+            return
+        }
         _connectionState.value = LiveConnectionState.Active(streamInfo)
-        startSimulationChatPolling(scope, streamInfo)
+        if (streamInfo.activeLiveChatId.isNotEmpty()) startRealChatPolling(streamInfo.activeLiveChatId, bearerToken)
     }
 
-    private fun startRealChatPolling(liveChatId: String, apiKey: String, bearerToken: String = "") {
+    private fun startRealChatPolling(liveChatId: String, bearerToken: String) {
         chatPollingJob?.cancel()
         nextPageToken = null
         chatPollingJob = CoroutineScope(Dispatchers.IO).launch {
             while (isActive) {
                 try {
                     val response = apiService.getLiveChatMessages(
-                        bearerToken = bearerToken.takeIf { it.isNotBlank() }?.let { "Bearer $it" },
+                        bearerToken = "Bearer $bearerToken",
                         liveChatId = liveChatId,
-                        pageToken = nextPageToken,
-                        apiKey = apiKey
+                        pageToken = nextPageToken
                     )
                     if (response.isSuccessful) {
                         val body = response.body()
@@ -328,72 +270,6 @@ class YouTubeRepository(private val context: Context) {
                 } catch (e: Exception) {
                     Log.e("YouTubeRepo", "Chat polling error", e)
                     delay(6000L)
-                }
-            }
-        }
-    }
-
-    private fun startSimulationChatPolling(scope: CoroutineScope, streamInfo: LiveStreamInfo) {
-        isSimulationMode = true
-        // Populate initial realistic creator comments
-        val initialMessages = listOf(
-            ChatMessage("1", "Ramesh Kumar", "", "", "राम राम मलाराम जी! बहुत बढ़िया लाइव।", System.currentTimeMillis() - 25000),
-            ChatMessage("2", "Kisan Helpline", "", "", "इस बार मूंगफली की बुवाई कब करनी चाहिए?", System.currentTimeMillis() - 20000, isModerator = true),
-            ChatMessage("3", "Suresh Choudhary", "", "", "जय जवान जय किसान भाई! ❤️", System.currentTimeMillis() - 17000),
-            ChatMessage("4", "Vikram Rathore", "", "", "सुपर लाइव मलाराम जी! ₹100 का सपोर्ट", System.currentTimeMillis() - 14000, isSuperChat = true, superChatAmount = "₹100"),
-            ChatMessage("5", "Anita Sharma", "", "", "सर आधुनिक ड्रिप सिंचाई की क्या सब्सिडी है?", System.currentTimeMillis() - 10000),
-            ChatMessage("6", "Sunil Bishnoi", "", "", "जैसलमेर से देख रहा हूँ, आवाज़ एकदम साफ़ आ रही है।", System.currentTimeMillis() - 6000, isMember = true),
-            ChatMessage("7", "Dinesh Patel", "", "", "खेती के उपकरण पर भी एक लाइव सेशन करो।", System.currentTimeMillis() - 2000)
-        )
-        _chatMessages.value = initialMessages
-
-        simulationJob?.cancel()
-        simulationJob = scope.launch(Dispatchers.IO) {
-            val sampleAuthors = listOf(
-                "Mukesh Verma", "Pooja Gurjar", "Om Prakash", "Harish Soni",
-                "Kavita Rajput", "Devendra Singh", "Radhe Shyam", "Manish Meena",
-                "Sunita Jat", "Mahesh Bhati"
-            )
-            val sampleComments = listOf(
-                "लाइक कर दिया सबने 👍",
-                "आज का टॉपिक बहुत शानदार है मलाराम भाई!",
-                "1 नंबर ऑप्शन पर वोट किया मैंने!",
-                "अगला सवाल मेरा लो सर 🙏",
-                "जैविक खाद कैसे बनाएं?",
-                "सोलर पंप का फॉर्म कैसे भरें?",
-                "बहुत ही ज्ञानवर्धक जानकारी 👌",
-                "राम राम भाईसा!",
-                "खेती जिंदाबाद!",
-                "सुपर चैट भेज रहा हूँ भाई!"
-            )
-
-            while (isActive) {
-                delay(Random.nextLong(3500, 7500))
-                val author = sampleAuthors.random()
-                val isSuper = Random.nextInt(12) == 0
-                val isMod = Random.nextInt(10) == 0
-                val isMember = Random.nextInt(6) == 0
-                val msg = ChatMessage(
-                    id = "sim_${System.currentTimeMillis()}",
-                    authorName = author,
-                    authorPhotoUrl = "",
-                    messageText = sampleComments.random(),
-                    timestamp = System.currentTimeMillis(),
-                    isSuperChat = isSuper,
-                    superChatAmount = if (isSuper) "₹${listOf(40, 100, 200, 500).random()}" else null,
-                    isModerator = isMod,
-                    isMember = isMember
-                )
-                _chatMessages.value = (listOf(msg) + _chatMessages.value).take(150)
-
-                // Update viewer count slightly
-                val current = _connectionState.value
-                if (current is LiveConnectionState.Active) {
-                    val delta = Random.nextLong(-8, 15)
-                    val newCount = (current.streamInfo.viewerCount + delta).coerceAtLeast(100)
-                    _connectionState.value = LiveConnectionState.Active(
-                        current.streamInfo.copy(viewerCount = newCount)
-                    )
                 }
             }
         }
