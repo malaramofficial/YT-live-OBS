@@ -105,7 +105,7 @@ class YouTubeRepository(private val context: Context) {
         }
     }
 
-    fun saveCredentials(channelName: String, channelIdVal: String, apiKeyVal: String, tokenVal: String) {
+    fun saveCredentials(channelName: String, channelIdVal: String, tokenVal: String) {
         _channelTitle.value = channelName
         _channelId.value = channelIdVal
         _apiKey.value = apiKeyVal
