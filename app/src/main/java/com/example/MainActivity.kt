@@ -134,12 +134,14 @@ class MainActivity : ComponentActivity() {
                 }
             }
     }
-    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainAppScreen(\n    viewModel: LiveEngagementViewModel,\n    onConnectYouTube: () -> Unit\n) {
+fun MainAppScreen(
+    viewModel: LiveEngagementViewModel,
+    onConnectYouTube: () -> Unit
+) {
     val currentTab by viewModel.currentTab.collectAsState()
     val connectionState by viewModel.connectionState.collectAsState()
     val qnaList by viewModel.qnaList.collectAsState()
