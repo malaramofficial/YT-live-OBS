@@ -74,12 +74,6 @@ fun MobileStreamingScreen(viewModel: LiveEngagementViewModel) {
 
     DisposableEffect(Unit) { onDispose { controller.release() } }
 
-    fun begin() {
-        if (!hasPermissions) { permissionLauncher.launch(arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)); return }
-        if (!connected) return
-        if (streamState == MobileStreamState.LIVE || streamState == MobileStreamState.CONNECTING || streamState == MobileStreamState.PREPARING) return
-        androidx.compose.runtime.LaunchedEffect(Unit)
-    }
 
     Box(Modifier.fillMaxSize().background(StudioBlack)) {
         Column(Modifier.fillMaxSize()) {
@@ -103,7 +97,9 @@ fun MobileStreamingScreen(viewModel: LiveEngagementViewModel) {
                             if (!hasPermissions) { permissionLauncher.launch(arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)); return@Button }
                             if (!connected) return@Button
                             if (streamState == MobileStreamState.LIVE || streamState == MobileStreamState.CONNECTING) { controller.stop(); return@Button }
-                            scope.launch {\n                                viewModel.repository.createMobileYouTubeLive(title = title)\n                                    .onSuccess { target -> controller.start(target.ingestUrl) }\n                                    .onFailure { error -> viewModel.setConnectionError(error.message ?: "Unable to create YouTube Live") }\n                            }
+                            scope.launch {
+                                viewModel.repository.createMobileYouTubeLive(title = title)\n                                    .onSuccess { target -> controller.start(target.ingestUrl) }\n                                    .onFailure { error -> viewModel.setConnectionError(error.message ?: "Unable to create YouTube Live") }
+                            }
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = if (streamState == MobileStreamState.LIVE) Color(0xFF8B0000) else YouTubeRed),
                         modifier = Modifier.weight(1f)
