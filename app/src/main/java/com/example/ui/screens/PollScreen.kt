@@ -256,24 +256,21 @@ private fun ActivePollDisplayCard(
                     val percentage = poll.percentageFor(option.id)
                     PollOptionBar(
                         option = option,
-                        percentage = percentage,
-                        isActive = poll.isActive
+                        percentage = percentage
                     )
                 }
             }
 
             Spacer(Modifier.height(18.dp))
 
-            // Bottom controls: End/Reopen Poll | Reset Votes
+            // End the active YouTube poll
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Button(
                     onClick = onToggleActive,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (poll.isActive) LiveRed else Color(0xFF2E7D32)
-                    ),
+                    colors = ButtonDefaults.buttonColors(containerColor = LiveRed),
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier
                         .weight(1.2f)
@@ -281,13 +278,13 @@ private fun ActivePollDisplayCard(
                         .testTag("btn_toggle_poll_active")
                 ) {
                     Icon(
-                        imageVector = if (poll.isActive) Icons.Default.StopCircle else Icons.Default.HowToVote,
+                        imageVector = Icons.Default.StopCircle,
                         contentDescription = null,
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
-                        text = if (poll.isActive) "END POLL" else "REOPEN POLL",
+                        text = "END POLL",
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp
                     )
@@ -301,8 +298,7 @@ private fun ActivePollDisplayCard(
 @Composable
 private fun PollOptionBar(
     option: PollOption,
-    percentage: Int,
-    isActive: Boolean
+    percentage: Int
 ) {
     val animatedProgress by animateFloatAsState(
         targetValue = percentage / 100f,
