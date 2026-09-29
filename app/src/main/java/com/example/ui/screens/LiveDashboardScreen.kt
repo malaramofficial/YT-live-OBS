@@ -32,7 +32,6 @@ import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.LiveTv
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Poll
 import androidx.compose.material.icons.filled.QuestionAnswer
 import androidx.compose.material.icons.filled.Refresh
@@ -131,10 +130,6 @@ fun LiveDashboardScreen(
                         onConnect = { chName ->
                             viewModel.connectYouTube(chName)
                         },
-                        onStartTestMode = {
-                            viewModel.connectYouTube()
-                            viewModel.startTestLiveMode()
-                        }
                     )
                 }
             }
@@ -148,7 +143,6 @@ fun LiveDashboardScreen(
                     NoActiveLiveCard(
                         message = state.message,
                         onRefresh = { viewModel.checkActiveLive() },
-                        onStartTestMode = { viewModel.startTestLiveMode() },
                         onCheckVideoId = { videoId -> viewModel.checkVideoById(videoId) }
                     )
                 }
@@ -417,8 +411,7 @@ fun PulsingLiveDot(modifier: Modifier = Modifier) {
 @Composable
 private fun ConnectYouTubeCard(
     channelTitle: String,
-    onConnect: (String) -> Unit,
-    onStartTestMode: () -> Unit
+    onConnect: (String) -> Unit
 ) {
     var inputChannel by remember { mutableStateOf(channelTitle) }
 
@@ -500,21 +493,6 @@ private fun ConnectYouTubeCard(
                 Text("Connect YouTube", fontWeight = FontWeight.Bold, fontSize = 15.sp)
             }
 
-            Spacer(Modifier.height(10.dp))
-
-            OutlinedButton(
-                onClick = onStartTestMode,
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .testTag("btn_start_test_mode")
-            ) {
-                Icon(Icons.Default.PlayArrow, contentDescription = null, tint = AccentBlue)
-                Spacer(Modifier.width(8.dp))
-                Text("Start Live Test Mode (सिम्युलेशन लाइव)", fontSize = 14.sp)
-            }
         }
     }
 }
