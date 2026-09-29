@@ -270,6 +270,7 @@ class YouTubeRepository(private val context: Context) {
 
     private fun startRealChatPolling(liveChatId: String, apiKey: String, bearerToken: String = "") {
         chatPollingJob?.cancel()
+        nextPageToken = null
         chatPollingJob = CoroutineScope(Dispatchers.IO).launch {
             while (isActive) {
                 try {
@@ -311,7 +312,7 @@ class YouTubeRepository(private val context: Context) {
                         if (parsed.isNotEmpty()) {
                             _chatMessages.value = (parsed + _chatMessages.value).take(150)
                         }
-                        val delayMs = body?.pollingIntervalMillis ?: 4000L
+                        val delayMs = (body?.pollingIntervalMillis ?: 4000L).coerceAtLeast(1000L)
                         delay(delayMs)
                     } else {
                         delay(5000L)
