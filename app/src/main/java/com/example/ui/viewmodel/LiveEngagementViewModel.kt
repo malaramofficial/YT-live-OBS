@@ -44,7 +44,6 @@ class LiveEngagementViewModel(application: Application) : AndroidViewModel(appli
     val isAccountConnected: StateFlow<Boolean> = repository.isAccountConnected
     val channelTitle: StateFlow<String> = repository.channelTitle
     val channelId: StateFlow<String> = repository.channelId
-    val apiKey: StateFlow<String> = repository.apiKey
     val oauthToken: StateFlow<String> = repository.oauthToken
 
     private val _currentTab = MutableStateFlow(ScreenTab.LIVE)
@@ -350,7 +349,6 @@ class LiveEngagementViewModel(application: Application) : AndroidViewModel(appli
         repository.saveCredentials(
             channelName = channelTitle.value,
             channelIdVal = channelId.value,
-            apiKeyVal = apiKey.value,
             tokenVal = token
         )
     }
@@ -359,7 +357,6 @@ class LiveEngagementViewModel(application: Application) : AndroidViewModel(appli
         repository.saveCredentials(
             channelName = channelTitle,
             channelIdVal = repository.channelId.value,
-            apiKeyVal = repository.apiKey.value,
             tokenVal = repository.oauthToken.value
         )
         _overlayConfig.value = _overlayConfig.value.copy(channelName = channelTitle)
