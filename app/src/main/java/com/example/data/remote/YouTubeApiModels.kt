@@ -93,14 +93,14 @@ data class YouTubeVideoStatistics(
 
 @JsonClass(generateAdapter = true)
 data class YouTubePollDetails(
-    @Json(name = "metadata") val metadata: YouTubePollMetadata?,
-    @Json(name = "status") val status: String?
+    @Json(name = "metadata") val metadata: YouTubePollMetadata?
 )
 
 @JsonClass(generateAdapter = true)
 data class YouTubePollMetadata(
     @Json(name = "questionText") val questionText: String?,
-    @Json(name = "options") val options: List<YouTubePollOption>?
+    @Json(name = "options") val options: List<YouTubePollOption>?,
+    @Json(name = "status") val status: String?
 )
 
 @JsonClass(generateAdapter = true)
