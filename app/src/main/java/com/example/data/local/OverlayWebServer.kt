@@ -131,7 +131,7 @@ document.getElementById('content').innerHTML=h;}catch(e){}}refresh();setInterval
 </script></body></html>
 """.trimIndent()
 
-    private fun findLocalIpv4(): String? = try {
+    private fun findLocalIpv4(): String? {
         val interfaces = NetworkInterface.getNetworkInterfaces()
         while (interfaces.hasMoreElements()) {
             val ni = interfaces.nextElement()
@@ -145,5 +145,7 @@ document.getElementById('content').innerHTML=h;}catch(e){}}refresh();setInterval
             }
         }
         null
-    } catch (_: Exception) { null }
+    } catch (_: Exception) {
+        null
+    }
 }
