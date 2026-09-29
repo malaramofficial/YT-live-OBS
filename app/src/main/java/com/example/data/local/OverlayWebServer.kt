@@ -144,8 +144,6 @@ document.getElementById('content').innerHTML=h;}catch(e){}}refresh();setInterval
                 }
             }
         }
-        null
-    } catch (_: Exception) {
-        null
+        return null
     }
 }
