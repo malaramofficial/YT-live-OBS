@@ -5,6 +5,7 @@ import android.util.Log
 import com.example.data.model.ChatMessage
 import com.example.data.model.LiveStreamInfo
 import com.example.data.model.LivePoll
+import com.example.data.model.MobileLiveTarget
 import com.example.data.model.PollOption
 import com.example.data.local.SecureTokenStore
 import com.example.data.remote.SendChatMessageRequest
@@ -366,6 +367,52 @@ class YouTubeRepository(private val context: Context) {
                 Result.success(Unit)
             } else Result.failure(IllegalStateException("YouTube poll close failed: HTTP ${response.code()}"))
         } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun createMobileYouTubeLive(
+        title: String,
+        description: String = "",
+        privacyStatus: String = "public",
+        resolution: String = "720p",
+        frameRate: String = "30fps"
+    ): Result<MobileLiveTarget> {
+        val token = _oauthToken.value.trim()
+        if (token.isBlank()) return Result.failure(IllegalStateException("YouTube authorization required"))
+        val cleanTitle = title.trim()
+        if (cleanTitle.isBlank()) return Result.failure(IllegalArgumentException("Live title cannot be empty"))
+        return try {
+            val scheduledStart = java.time.Instant.now().plusSeconds(60).toString()
+            val broadcastResponse = apiService.createLiveBroadcast(
+                bearerToken = "Bearer " + token,
+                request = com.example.data.remote.CreateLiveBroadcastRequest(
+                    snippet = com.example.data.remote.CreateBroadcastSnippet(cleanTitle, description.trim(), scheduledStart),
+                    status = com.example.data.remote.CreateBroadcastStatus(privacyStatus),
+                    contentDetails = com.example.data.remote.CreateBroadcastContentDetails()
+                )
+            )
+            if (!broadcastResponse.isSuccessful) return Result.failure(IllegalStateException("YouTube broadcast creation failed: HTTP " + broadcastResponse.code() + " " + broadcastResponse.message()))
+            val broadcastId = broadcastResponse.body()?.id ?: return Result.failure(IllegalStateException("YouTube returned no broadcast ID"))
+            val streamResponse = apiService.createLiveStream(
+                bearerToken = "Bearer " + token,
+                request = com.example.data.remote.CreateLiveStreamRequest(
+                    snippet = com.example.data.remote.CreateStreamSnippet("$cleanTitle - Mobile Stream"),
+                    cdn = com.example.data.remote.CreateStreamCdn(frameRate, "rtmp", resolution)
+                )
+            )
+            if (!streamResponse.isSuccessful) return Result.failure(IllegalStateException("YouTube stream creation failed: HTTP " + streamResponse.code() + " " + streamResponse.message()))
+            val stream = streamResponse.body() ?: return Result.failure(IllegalStateException("YouTube returned no stream details"))
+            val streamId = stream.id ?: return Result.failure(IllegalStateException("YouTube returned no stream ID"))
+            val ingestion = stream.cdn?.ingestionInfo ?: return Result.failure(IllegalStateException("YouTube returned no ingestion information"))
+            val streamName = ingestion.streamName ?: return Result.failure(IllegalStateException("YouTube returned no stream name"))
+            val baseUrl = ingestion.rtmpsIngestionAddress ?: stream.cdn.rtmpsIngestionAddress ?: ingestion.ingestionAddress ?: return Result.failure(IllegalStateException("YouTube returned no ingestion URL"))
+            val ingestUrl = if (baseUrl.endsWith("/")) baseUrl + streamName else baseUrl + "/" + streamName
+            val bindResponse = apiService.bindLiveBroadcast("Bearer " + token, broadcastId, streamId)
+            if (!bindResponse.isSuccessful) return Result.failure(IllegalStateException("YouTube broadcast binding failed: HTTP " + bindResponse.code() + " " + bindResponse.message()))
+            Result.success(MobileLiveTarget(broadcastId, broadcastId, streamId, ingestUrl, streamName))
+        } catch (e: Exception) {
+            Log.e("YouTubeRepo", "Failed to create mobile YouTube live", e)
             Result.failure(e)
         }
     }
