@@ -152,9 +152,9 @@ class YouTubeRepository(private val context: Context) {
                 return@launch
             }
             try {
-                val response = apiService.getMyActiveLiveBroadcasts("Bearer $token")
+                val response = apiService.getMyLiveBroadcasts("Bearer $token")
                 if (response.isSuccessful) {
-                    val videoId = response.body()?.items?.firstOrNull()?.id
+                    val videoId = response.body()?.items?.firstOrNull {\n                        it.status?.lifeCycleStatus?.equals("live", ignoreCase = true) == true\n                    }?.id
                     if (!videoId.isNullOrEmpty()) {
                         fetchVideoDetails(videoId, token)
                     } else {
