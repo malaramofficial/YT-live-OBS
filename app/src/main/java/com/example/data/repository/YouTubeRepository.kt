@@ -116,7 +116,11 @@ class YouTubeRepository(private val context: Context) {
         _isAccountConnected.value = false
         _connectionState.value = LiveConnectionState.Disconnected
         _chatMessages.value = emptyList()
-        sharedPrefs.edit().putBoolean("is_connected", false).apply()
+        _oauthToken.value = ""
+        sharedPrefs.edit()
+            .putBoolean("is_connected", false)
+            .remove("oauth_token")
+            .apply()
     }
 
     fun checkActiveLiveStream(scope: CoroutineScope? = null) {
