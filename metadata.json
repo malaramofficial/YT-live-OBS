@@ -1,6 +1,9 @@
 {
   "name": "Malaram Live Engagement Tool",
-  "description": "YouTube Live Control Center for creators to manage Live Chat, Q&A, Polls, Announcements, and Overlay.",
+  "description": "Real YouTube Live control center for live chat, polls, Q&A, announcements, and a local OBS overlay.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "YOUTUBE_LIVE_API",
+    "LOCAL_OBS_OVERLAY"
+  ]
 }
