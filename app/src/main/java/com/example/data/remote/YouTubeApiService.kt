@@ -51,6 +51,7 @@ interface YouTubeApiService {
 
     @GET("liveChat/messages")
     suspend fun getLiveChatMessages(
+        @Header("Authorization") bearerToken: String? = null,
         @Query("liveChatId") liveChatId: String,
         @Query("part") part: String = "snippet,authorDetails",
         @Query("pageToken") pageToken: String? = null,
