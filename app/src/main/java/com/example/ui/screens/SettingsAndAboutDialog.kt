@@ -36,7 +36,6 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -189,7 +188,7 @@ fun SettingsAndAboutDialog(
                     Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(17.dp))
                     Spacer(Modifier.width(7.dp))
                     Text(
-                        if (isConnected && currentToken.isNotBlank()) "YouTube Connected" else "Connect Google / YouTube",
+                        if (isConnected) "YouTube Connected" else "Connect Google / YouTube",
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp
                     )
