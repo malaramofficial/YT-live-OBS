@@ -58,6 +58,7 @@ import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.common.api.Scope
 import com.example.ui.screens.LiveChatScreen
 import com.example.ui.screens.LiveDashboardScreen
+import com.example.ui.screens.MobileStreamingScreen
 import com.example.ui.screens.OverlayPreviewScreen
 import com.example.ui.screens.PollScreen
 import com.example.ui.screens.PulsingLiveDot
