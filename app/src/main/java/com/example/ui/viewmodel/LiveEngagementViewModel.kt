@@ -15,14 +15,12 @@ import com.example.data.model.PollOption
 import com.example.data.repository.LiveConnectionState
 import com.example.data.repository.YouTubeRepository
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlin.random.Random
 
 enum class ScreenTab(val title: String, val tabLabel: String) {
     LIVE("Malaram Live", "LIVE"),
@@ -137,17 +135,7 @@ class LiveEngagementViewModel(application: Application) : AndroidViewModel(appli
             }
         }
 
-        // Background poll votes simulation so poll feels dynamic during testing
-        viewModelScope.launch(Dispatchers.Default) {
-            while (true) {
-                delay(6000)
-                if (_currentPoll.value.isActive && connectionState.value is LiveConnectionState.Active) {
-                    val randomOptionId = Random.nextInt(1, 5)
-                    votePollOption(randomOptionId, isAudience = true)
-                }
-            }
-        }
-    }
+        // Real audience vote totals must come from YouTube; never fabricate them locally.\n    }
 
     fun setTab(tab: ScreenTab) {
         _currentTab.value = tab
@@ -292,23 +280,28 @@ class LiveEngagementViewModel(application: Application) : AndroidViewModel(appli
 
     // Poll Actions
     fun createNewPoll(question: String, optionsTexts: List<String>) {
-        val validOptions = optionsTexts.filter { it.isNotBlank() }
-        if (question.isBlank() || validOptions.size < 2) return
-        val newPoll = LivePoll(
-            id = "poll_${System.currentTimeMillis()}",
-            question = question,
-            options = validOptions.mapIndexed { index, text ->
-                PollOption(id = index + 1, text = text, votes = 0)
-            },
-            isActive = true,
-            showOnOverlay = true
-        )
-        _currentPoll.value = newPoll
-        // Also announce new poll
-        broadcastAnnouncement("📢", "अगला Poll शुरू हो गया है: $question")
+        val validOptions = optionsTexts.map { it.trim() }.filter { it.isNotBlank() }.take(4)
+        if (question.isBlank() || validOptions.size !in 2..4) return
+
+        viewModelScope.launch {
+            repository.createYouTubePoll(question.trim(), validOptions)
+                .onSuccess { pollMessageId ->
+                    _currentPoll.value = LivePoll(
+                        id = pollMessageId.ifBlank { "poll_${System.currentTimeMillis()}" },
+                        question = question.trim(),
+                        options = validOptions.mapIndexed { index, text ->
+                            PollOption(id = index + 1, text = text, votes = 0)
+                        },
+                        isActive = true,
+                        showOnOverlay = true
+                    )
+                }
+        }
     }
 
     fun votePollOption(optionId: Int, isAudience: Boolean = false) {
+        // Local voting is only a preview interaction. Real audience votes are owned by YouTube.
+        if (isAudience) return
         val poll = _currentPoll.value
         if (!poll.isActive) return
         val updatedOptions = poll.options.map {
@@ -318,18 +311,19 @@ class LiveEngagementViewModel(application: Application) : AndroidViewModel(appli
     }
 
     fun resetPollVotes() {
-        val poll = _currentPoll.value
-        val resetOptions = poll.options.map { it.copy(votes = 0) }
-        _currentPoll.value = poll.copy(options = resetOptions, isActive = true)
+        // Do not invent or reset YouTube-owned audience totals.
+        _currentPoll.value = _currentPoll.value.copy(
+            options = _currentPoll.value.options.map { it.copy(votes = 0) }
+        )
     }
 
     fun togglePollActive() {
         val poll = _currentPoll.value
-        _currentPoll.value = poll.copy(isActive = !poll.isActive)
-    }
-
-    fun togglePollOverlay(show: Boolean) {
-        _currentPoll.value = _currentPoll.value.copy(showOnOverlay = show)
+        if (!poll.isActive) return
+        viewModelScope.launch {
+            repository.closeYouTubePoll(poll.id)
+                .onSuccess { _currentPoll.value = poll.copy(isActive = false) }
+        }
     }
 
     // Announcement Actions
