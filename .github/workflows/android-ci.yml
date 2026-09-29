@@ -24,9 +24,11 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
 
       - name: Unit tests
-        run: ./gradlew test
+        run: gradle test
 
       - name: Debug APK
-        run: ./gradlew assembleDebug
+        run: gradle assembleDebug
