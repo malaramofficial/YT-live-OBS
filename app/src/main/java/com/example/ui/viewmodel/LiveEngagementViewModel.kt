@@ -151,7 +151,8 @@ class LiveEngagementViewModel(application: Application) : AndroidViewModel(appli
     fun disconnectYouTube() {
         repository.disconnectYouTube()
     }
-\n    fun setConnectionError(message: String) {
+
+    fun setConnectionError(message: String) {
         repository.setConnectionError(message)
     }
 
