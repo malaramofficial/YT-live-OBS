@@ -127,6 +127,12 @@ class YouTubeRepository(private val context: Context) {
         checkActiveLiveStream(scope)
     }
 
+    fun setConnectionError(message: String) {
+        _isAccountConnected.value = false
+        sharedPrefs.edit().putBoolean("is_connected", false).apply()
+        _connectionState.value = LiveConnectionState.Error(message)
+    }
+
     fun disconnectYouTube() {
         stopChatPolling()
         _activePoll.value = null
