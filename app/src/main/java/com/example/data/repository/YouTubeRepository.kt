@@ -26,7 +26,6 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.TimeUnit
-import kotlin.random.Random
 
 sealed class LiveConnectionState {
     object Disconnected : LiveConnectionState()
@@ -196,28 +195,21 @@ class YouTubeRepository(private val context: Context) {
     suspend fun checkVideoById(videoId: String, scope: CoroutineScope) {
         _connectionState.value = LiveConnectionState.Checking
         val key = _apiKey.value.trim()
-        if (key.isNotEmpty()) {
-            try {
-                fetchVideoDetails(videoId, key)
-                return
-            } catch (e: Exception) {
-                Log.e("YouTubeRepo", "Error checking video ID", e)
-            }
+        val token = _oauthToken.value.trim()
+        if (key.isBlank() && token.isBlank()) {
+            _connectionState.value = LiveConnectionState.Error(
+                "YouTube authentication required. Connect Google / YouTube or provide an API key."
+            )
+            return
         }
-        // If without API key or direct test
-        startLiveStream(
-            LiveStreamInfo(
-                videoId = videoId,
-                title = "Live Q&A With Malaram Official | लाइव बातचीत",
-                channelTitle = _channelTitle.value,
-                isLive = true,
-                viewerCount = 1250,
-                likeCount = 380,
-                startedAt = System.currentTimeMillis() - 15 * 60 * 1000,
-                activeLiveChatId = "chat_$videoId"
-            ),
-            scope
-        )
+        try {
+            fetchVideoDetails(videoId, key, token)
+        } catch (e: Exception) {
+            Log.e("YouTubeRepo", "Error checking video ID", e)
+            _connectionState.value = LiveConnectionState.Error(
+                "YouTube API error: " + (e.message ?: "unknown error")
+            )
+        }
     }
 
     private suspend fun fetchVideoDetails(videoId: String, apiKey: String, bearerToken: String = "") {
