@@ -137,6 +137,34 @@ data class LiveChatAuthorDetails(
 )
 
 @JsonClass(generateAdapter = true)
+data class CreateLivePollRequest(
+    @Json(name = "snippet") val snippet: CreateLivePollSnippet
+)
+
+@JsonClass(generateAdapter = true)
+data class CreateLivePollSnippet(
+    @Json(name = "liveChatId") val liveChatId: String,
+    @Json(name = "type") val type: String = "pollEvent",
+    @Json(name = "pollDetails") val pollDetails: PollDetails
+)
+
+@JsonClass(generateAdapter = true)
+data class PollDetails(
+    @Json(name = "metadata") val metadata: PollMetadata
+)
+
+@JsonClass(generateAdapter = true)
+data class PollMetadata(
+    @Json(name = "questionText") val questionText: String,
+    @Json(name = "options") val options: List<PollOptionRequest>
+)
+
+@JsonClass(generateAdapter = true)
+data class PollOptionRequest(
+    @Json(name = "optionText") val optionText: String
+)
+
+@JsonClass(generateAdapter = true)
 data class SendChatMessageRequest(
     @Json(name = "snippet") val snippet: SendChatMessageSnippet
 )
