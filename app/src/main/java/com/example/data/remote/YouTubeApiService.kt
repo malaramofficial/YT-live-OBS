@@ -45,6 +45,7 @@ interface YouTubeApiService {
     @GET("videos")
     suspend fun getVideoDetails(
         @Query("part") part: String = "snippet,liveStreamingDetails,statistics",
+        @Header("Authorization") bearerToken: String? = null,
         @Query("id") videoId: String,
         @Query("key") apiKey: String
     ): Response<YouTubeVideoListResponse>
