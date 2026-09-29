@@ -60,37 +60,20 @@ class LiveEngagementViewModel(application: Application) : AndroidViewModel(appli
     // Poll State
     private val _currentPoll = MutableStateFlow(
         LivePoll(
-            id = "poll_default",
-            question = "आज Live में क्या करें?",
-            options = listOf(
-                PollOption(1, "खेती (Agriculture)", 142),
-                PollOption(2, "Gaming", 58),
-                PollOption(3, "Comedy", 87),
-                PollOption(4, "Technology", 112)
-            ),
-            isActive = true,
+            id = "",
+            question = "",
+            options = emptyList(),
+            isActive = false,
             showOnOverlay = true
         )
     )
     val currentPoll: StateFlow<LivePoll> = _currentPoll.asStateFlow()
 
     // Announcements
-    private val _currentAnnouncement = MutableStateFlow<Announcement?>(
-        Announcement(
-            emoji = "❤️",
-            text = "Welcome to Malaram Official Live Stream!",
-            isActiveOnOverlay = true
-        )
-    )
+    private val _currentAnnouncement = MutableStateFlow<Announcement?>(null)
     val currentAnnouncement: StateFlow<Announcement?> = _currentAnnouncement.asStateFlow()
 
-    private val _announcementsHistory = MutableStateFlow<List<Announcement>>(
-        listOf(
-            Announcement(emoji = "❤️", text = "Welcome to Malaram Official Live Stream!"),
-            Announcement(emoji = "👍", text = "Like कर दो सभी भाई लोग!"),
-            Announcement(emoji = "🔔", text = "Subscribe करके घंटी दबा दो")
-        )
-    )
+    private val _announcementsHistory = MutableStateFlow<List<Announcement>>(emptyList())
     val announcementsHistory: StateFlow<List<Announcement>> = _announcementsHistory.asStateFlow()
 
     // Overlay Configuration
@@ -151,35 +134,6 @@ class LiveEngagementViewModel(application: Application) : AndroidViewModel(appli
                 if (remotePoll != null) {
                     _currentPoll.value = remotePoll
                 }
-            }
-        }
-
-        // Seed default sample Q&A if database is empty
-        viewModelScope.launch(Dispatchers.IO) {
-            val count = qnaList.value.size
-            if (count == 0) {
-                val q1 = QnaEntity(
-                    questionText = "मलाराम जी, सोलर पंप पर कितनी सब्सिडी मिल रही है?",
-                    authorName = "Mukesh Bishnoi",
-                    timestamp = System.currentTimeMillis() - 10 * 60 * 1000,
-                    isSpotlight = true,
-                    orderIndex = 1
-                )
-                val q2 = QnaEntity(
-                    questionText = "इस मौसम में ड्रिप सिंचाई की क्या सावधानियां रखें?",
-                    authorName = "Ramesh Kumar",
-                    timestamp = System.currentTimeMillis() - 7 * 60 * 1000,
-                    orderIndex = 2
-                )
-                val q3 = QnaEntity(
-                    questionText = "अगला वीडियो किस विषय पर बना रहे हैं?",
-                    authorName = "Sunita Meena",
-                    timestamp = System.currentTimeMillis() - 4 * 60 * 1000,
-                    orderIndex = 3
-                )
-                qnaDao.insertQuestion(q1)
-                qnaDao.insertQuestion(q2)
-                qnaDao.insertQuestion(q3)
             }
         }
 
