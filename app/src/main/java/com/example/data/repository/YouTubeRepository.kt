@@ -260,6 +260,7 @@ class YouTubeRepository(private val context: Context) {
             while (isActive) {
                 try {
                     val response = apiService.getLiveChatMessages(
+                        bearerToken = bearerToken.takeIf { it.isNotBlank() }?.let { "Bearer $it" },
                         liveChatId = liveChatId,
                         pageToken = nextPageToken,
                         apiKey = apiKey
