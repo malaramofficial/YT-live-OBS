@@ -36,6 +36,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -78,6 +79,10 @@ fun SettingsAndAboutDialog(
     var channelId by remember { mutableStateOf(currentId) }
     var apiKey by remember { mutableStateOf(currentApiKey) }
     var oauthToken by remember { mutableStateOf(currentToken) }
+
+    LaunchedEffect(currentToken) {
+        oauthToken = currentToken
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
