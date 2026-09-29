@@ -134,8 +134,11 @@ class MainActivity : ComponentActivity() {
                     result.accessToken?.takeIf { it.isNotBlank() }?.let { token ->
                         viewModel.setOAuthToken(token)
                         viewModel.connectYouTube()
-                    }
+                    } ?: viewModel.setConnectionError("Google authorization returned no YouTube access token.")
                 }
+            }
+            .addOnFailureListener {
+                viewModel.setConnectionError("Unable to start Google/YouTube authorization. Check the app OAuth configuration.")
             }
     }
 }
