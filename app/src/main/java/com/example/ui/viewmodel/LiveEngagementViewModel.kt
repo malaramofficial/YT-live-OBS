@@ -365,6 +365,15 @@ class LiveEngagementViewModel(application: Application) : AndroidViewModel(appli
         }
     }
 
+    fun setOAuthToken(token: String) {
+        repository.saveCredentials(
+            channelName = channelTitle.value,
+            channelIdVal = channelId.value,
+            apiKeyVal = apiKey.value,
+            tokenVal = token
+        )
+    }
+
     fun saveSettings(channelTitle: String, channelId: String, apiKey: String, oauthToken: String) {
         repository.saveCredentials(channelTitle, channelId, apiKey, oauthToken)
         _overlayConfig.value = _overlayConfig.value.copy(channelName = channelTitle)
