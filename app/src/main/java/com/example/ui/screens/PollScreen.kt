@@ -146,10 +146,9 @@ fun PollScreen(
             }
         }
 
-        // Quick Presets Section
         item {
             Text(
-                text = "QUICK POLL PRESETS",
+                text = "POLL DATA",
                 color = TextSecondary,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
@@ -159,41 +158,10 @@ fun PollScreen(
         }
 
         item {
-            PresetPollItem(
-                title = "आज Live में क्या करें?",
-                options = listOf("खेती", "Gaming", "Comedy", "Technology"),
-                onClick = {
-                    viewModel.createNewPoll(
-                        "आज Live में क्या करें?",
-                        listOf("खेती (Agriculture)", "Gaming", "Comedy", "Technology")
-                    )
-                }
-            )
-        }
-
-        item {
-            PresetPollItem(
-                title = "आवाज़ और वीडियो कैसा है?",
-                options = listOf("हाँ, एकदम साफ़ है 👍", "थोड़ी आवाज़ कम है", "वीडियो में अड़चन है"),
-                onClick = {
-                    viewModel.createNewPoll(
-                        "क्या आपको मेरी आवाज़ और वीडियो साफ़ आ रही है?",
-                        listOf("हाँ, एकदम साफ़ है 👍", "थोड़ी आवाज़ कम है", "वीडियो में अड़चन है")
-                    )
-                }
-            )
-        }
-
-        item {
-            PresetPollItem(
-                title = "अगला टॉपिक क्या होना चाहिए?",
-                options = listOf("आधुनिक कृषि यंत्र", "सरकारी किसान योजनाएं", "जैविक खेती", "ड्रिप सिंचाई"),
-                onClick = {
-                    viewModel.createNewPoll(
-                        "अगला टॉपिक क्या होना चाहिए?",
-                        listOf("आधुनिक कृषि यंत्र", "सरकारी किसान योजनाएं", "जैविक खेती", "ड्रिप सिंचाई")
-                    )
-                }
+            Text(
+                text = "वोट के आँकड़े सीधे YouTube Live से दिखाए जाते हैं।",
+                color = TextTertiary,
+                fontSize = 12.sp
             )
         }
     }
