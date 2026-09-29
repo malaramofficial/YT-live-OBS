@@ -83,32 +83,34 @@ class MainActivity : ComponentActivity() {
         private const val YOUTUBE_SCOPE = "https://www.googleapis.com/auth/youtube"
     }
 
-    private val youtubeAuthorizationLauncher =
-        registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK && result.data != null) {
-                runCatching {
-                    Identity.getAuthorizationClient(this).getAuthorizationResultFromIntent(result.data)
-                }.onSuccess { authResult ->
-                    val token = authResult.accessToken
-                    if (!token.isNullOrBlank()) {
-                        viewModel.setOAuthToken(token)
-                        viewModel.connectYouTube()
-                    } else {
-                        viewModel.setConnectionError("Google authorization returned no YouTube access token.")
-                    }
-                }.onFailure {
-                    viewModel.setConnectionError("Google/YouTube authorization failed. Please try Connect YouTube again.")
-                }
-            } else {
-                viewModel.setConnectionError("Google/YouTube authorization was cancelled or denied.")
-            }
-        }
-    }
-
     private val viewModel: LiveEngagementViewModel by viewModels()
+    private lateinit var youtubeAuthorizationLauncher: androidx.activity.result.ActivityResultLauncher<IntentSenderRequest>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        youtubeAuthorizationLauncher =
+            registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
+                if (result.resultCode == Activity.RESULT_OK && result.data != null) {
+                    runCatching {
+                        Identity.getAuthorizationClient(this)
+                            .getAuthorizationResultFromIntent(result.data)
+                    }.onSuccess { authResult ->
+                        val token = authResult.accessToken
+                        if (!token.isNullOrBlank()) {
+                            viewModel.setOAuthToken(token)
+                            viewModel.connectYouTube()
+                        } else {
+                            viewModel.setConnectionError("Google authorization returned no YouTube access token.")
+                        }
+                    }.onFailure {
+                        viewModel.setConnectionError("Google/YouTube authorization failed. Please try Connect YouTube again.")
+                    }
+                } else {
+                    viewModel.setConnectionError("Google/YouTube authorization was cancelled or denied.")
+                }
+            }
+
         enableEdgeToEdge()
         setContent {
             MalaramLiveTheme {
