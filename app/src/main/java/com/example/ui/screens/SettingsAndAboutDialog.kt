@@ -70,19 +70,9 @@ fun SettingsAndAboutDialog(
     onDismiss: () -> Unit
 ) {
     val currentTitle by viewModel.channelTitle.collectAsState()
-    val currentId by viewModel.channelId.collectAsState()
-    val currentApiKey by viewModel.apiKey.collectAsState()
-    val currentToken by viewModel.oauthToken.collectAsState()
     val isConnected by viewModel.isAccountConnected.collectAsState()
 
     var channelTitle by remember { mutableStateOf(currentTitle) }
-    var channelId by remember { mutableStateOf(currentId) }
-    var apiKey by remember { mutableStateOf(currentApiKey) }
-    var oauthToken by remember { mutableStateOf(currentToken) }
-
-    LaunchedEffect(currentToken) {
-        oauthToken = currentToken
-    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -187,40 +177,6 @@ fun SettingsAndAboutDialog(
                     )
                 )
 
-                OutlinedTextField(
-                    value = channelId,
-                    onValueChange = { channelId = it },
-                    label = { Text("YouTube Channel ID") },
-                    placeholder = { Text("UCxxxxxxxxxxxxxxxxxx") },
-                    singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("settings_channel_id"),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = YouTubeRed,
-                        unfocusedBorderColor = StudioCardBorder,
-                        focusedTextColor = TextPrimary,
-                        unfocusedTextColor = TextPrimary
-                    )
-                )
-
-                OutlinedTextField(
-                    value = apiKey,
-                    onValueChange = { apiKey = it },
-                    label = { Text("YouTube Data API v3 Key (Optional)") },
-                    placeholder = { Text("AIzaSy...") },
-                    singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("settings_api_key"),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = YouTubeRed,
-                        unfocusedBorderColor = StudioCardBorder,
-                        focusedTextColor = TextPrimary,
-                        unfocusedTextColor = TextPrimary
-                    )
-                )
-
                 Button(
                     onClick = onConnectYouTube,
                     colors = ButtonDefaults.buttonColors(containerColor = YouTubeRed),
@@ -238,30 +194,6 @@ fun SettingsAndAboutDialog(
                         fontSize = 13.sp
                     )
                 }
-
-                Text(
-                    text = "Google authorization is used for your YouTube account. Manual OAuth tokens are kept only as an advanced fallback.",
-                    color = TextTertiary,
-                    fontSize = 10.sp,
-                    lineHeight = 14.sp
-                )
-
-                OutlinedTextField(
-                    value = oauthToken,
-                    onValueChange = { oauthToken = it },
-                    label = { Text("OAuth Bearer Token (For Chat Sending/Deleting)") },
-                    placeholder = { Text("ya29....") },
-                    singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("settings_oauth_token"),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = YouTubeRed,
-                        unfocusedBorderColor = StudioCardBorder,
-                        focusedTextColor = TextPrimary,
-                        unfocusedTextColor = TextPrimary
-                    )
-                )
 
                 if (isConnected) {
                     OutlinedButton(
@@ -286,12 +218,7 @@ fun SettingsAndAboutDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    viewModel.saveSettings(
-                        channelTitle = channelTitle.trim(),
-                        channelId = channelId.trim(),
-                        apiKey = apiKey.trim(),
-                        oauthToken = oauthToken.trim()
-                    )
+                    viewModel.saveChannelBranding(channelTitle.trim())
                     onDismiss()
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = YouTubeRed),
