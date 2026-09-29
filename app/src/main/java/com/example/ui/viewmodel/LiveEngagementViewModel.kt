@@ -106,6 +106,14 @@ class LiveEngagementViewModel(application: Application) : AndroidViewModel(appli
     val overlayConfig: StateFlow<OverlayConfig> = _overlayConfig.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            repository.activePoll.collect { remotePoll ->
+                if (remotePoll != null) {
+                    _currentPoll.value = remotePoll
+                }
+            }
+        }
+
         // Seed default sample Q&A if database is empty
         viewModelScope.launch(Dispatchers.IO) {
             val count = qnaList.value.size
