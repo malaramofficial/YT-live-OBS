@@ -135,7 +135,8 @@ class LiveEngagementViewModel(application: Application) : AndroidViewModel(appli
             }
         }
 
-        // Real audience vote totals must come from YouTube; never fabricate them locally.\n    }
+        // Real audience vote totals must come from YouTube; never fabricate them locally.
+    }
 
     fun setTab(tab: ScreenTab) {
         _currentTab.value = tab
