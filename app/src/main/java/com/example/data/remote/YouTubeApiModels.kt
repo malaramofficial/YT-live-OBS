@@ -41,6 +41,30 @@ data class YouTubeThumbnailItem(
 )
 
 @JsonClass(generateAdapter = true)
+data class YouTubeLiveBroadcastListResponse(
+    @Json(name = "items") val items: List<YouTubeLiveBroadcastItem>?
+)
+
+@JsonClass(generateAdapter = true)
+data class YouTubeLiveBroadcastItem(
+    @Json(name = "id") val id: String?,
+    @Json(name = "snippet") val snippet: YouTubeSnippet?,
+    @Json(name = "contentDetails") val contentDetails: YouTubeLiveBroadcastContentDetails?,
+    @Json(name = "status") val status: YouTubeLiveBroadcastStatus?
+)
+
+@JsonClass(generateAdapter = true)
+data class YouTubeLiveBroadcastContentDetails(
+    @Json(name = "boundStreamId") val boundStreamId: String?,
+    @Json(name = "activeLiveChatId") val activeLiveChatId: String?
+)
+
+@JsonClass(generateAdapter = true)
+data class YouTubeLiveBroadcastStatus(
+    @Json(name = "lifeCycleStatus") val lifeCycleStatus: String?
+)
+
+@JsonClass(generateAdapter = true)
 data class YouTubeVideoListResponse(
     @Json(name = "items") val items: List<YouTubeVideoItem>?
 )
