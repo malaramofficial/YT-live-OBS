@@ -374,8 +374,6 @@ class YouTubeRepository(private val context: Context) {
     fun stopChatPolling() {
         chatPollingJob?.cancel()
         chatPollingJob = null
-        simulationJob?.cancel()
-        simulationJob = null
     }
 
     fun highlightMessage(messageId: String) {
@@ -390,54 +388,59 @@ class YouTubeRepository(private val context: Context) {
         }
     }
 
-    fun deleteMessage(messageId: String, scope: CoroutineScope) {
-        val currentMsg = _chatMessages.value.find { it.id == messageId }
-        _chatMessages.value = _chatMessages.value.map {
-            if (it.id == messageId) it.copy(isDeleted = true, messageText = "[टिप्पणी हटा दी गई]") else it
-        }
+    suspend fun deleteMessage(messageId: String): Result<Unit> {
         val token = _oauthToken.value.trim()
-        if (token.isNotEmpty()) {
-            scope.launch(Dispatchers.IO) {
-                try {
-                    apiService.deleteChatMessage("Bearer $token", messageId)
-                } catch (e: Exception) {
-                    Log.e("YouTubeRepo", "Failed to delete message via YouTube API", e)
+        if (token.isBlank()) return Result.failure(IllegalStateException("YouTube authorization required"))
+        if (messageId.isBlank()) return Result.failure(IllegalArgumentException("Message ID missing"))
+
+        return try {
+            val response = apiService.deleteChatMessage("Bearer $token", messageId)
+            if (response.isSuccessful) {
+                _chatMessages.value = _chatMessages.value.map {
+                    if (it.id == messageId) it.copy(isDeleted = true, messageText = "[टिप्पणी हटा दी गई]") else it
                 }
+                Result.success(Unit)
+            } else if (response.code() == 401 || response.code() == 403) {
+                setConnectionError("YouTube authorization expired or was denied (HTTP " + response.code() + "). Reconnect YouTube.")
+                Result.failure(IllegalStateException("YouTube authorization expired or was denied"))
+            } else {
+                Result.failure(IllegalStateException("YouTube delete failed: HTTP " + response.code()))
             }
+        } catch (e: Exception) {
+            Log.e("YouTubeRepo", "Failed to delete message via YouTube API", e)
+            Result.failure(e)
         }
     }
 
-    fun sendReplyMessage(text: String, scope: CoroutineScope) {
+    suspend fun sendReplyMessage(text: String): Result<Unit> {
         val activeStream = (_connectionState.value as? LiveConnectionState.Active)?.streamInfo
-        val creatorMsg = ChatMessage(
-            id = "creator_${System.currentTimeMillis()}",
-            authorName = _channelTitle.value,
-            authorPhotoUrl = "",
-            messageText = text,
-            timestamp = System.currentTimeMillis(),
-            isModerator = true,
-            isMember = true
-        )
-        _chatMessages.value = listOf(creatorMsg) + _chatMessages.value
-
+            ?: return Result.failure(IllegalStateException("No active YouTube Live stream"))
         val token = _oauthToken.value.trim()
-        val chatId = activeStream?.activeLiveChatId
-        if (token.isNotEmpty() && !chatId.isNullOrEmpty()) {
-            scope.launch(Dispatchers.IO) {
-                try {
-                    apiService.postChatMessage(
-                        bearerToken = "Bearer $token",
-                        request = SendChatMessageRequest(
-                            snippet = SendChatMessageSnippet(
-                                liveChatId = chatId,
-                                textMessageDetails = TextMessageDetails(messageText = text)
-                            )
-                        )
+        val chatId = activeStream.activeLiveChatId
+        if (token.isBlank()) return Result.failure(IllegalStateException("YouTube authorization required"))
+        if (chatId.isBlank()) return Result.failure(IllegalStateException("Active live chat not available"))
+        if (text.isBlank()) return Result.failure(IllegalArgumentException("Message cannot be blank"))
+
+        return try {
+            val response = apiService.postChatMessage(
+                bearerToken = "Bearer " + token,
+                request = SendChatMessageRequest(
+                    snippet = SendChatMessageSnippet(
+                        liveChatId = chatId,
+                        textMessageDetails = TextMessageDetails(messageText = text)
                     )
-                } catch (e: Exception) {
-                    Log.e("YouTubeRepo", "Failed to post message via API", e)
-                }
+                )
+            )
+            if (response.isSuccessful) Result.success(Unit)
+            else if (response.code() == 401 || response.code() == 403) {
+                setConnectionError("YouTube authorization expired or was denied (HTTP " + response.code() + "). Reconnect YouTube.")
+                Result.failure(IllegalStateException("YouTube authorization expired or was denied"))
+            } else {
+                Result.failure(IllegalStateException("YouTube message failed: HTTP " + response.code()))
             }
+        } catch (e: Exception) {
+            Log.e("YouTubeRepo", "Failed to post message via YouTube API", e)
+            Result.failure(e)
         }
     }
 }
