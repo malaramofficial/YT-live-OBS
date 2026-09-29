@@ -10,6 +10,28 @@ import retrofit2.http.Query
 
 interface YouTubeApiService {
 
+    @POST("liveBroadcasts")
+    suspend fun createLiveBroadcast(
+        @Header("Authorization") bearerToken: String,
+        @Query("part") part: String = "snippet,status,contentDetails",
+        @Body request: CreateLiveBroadcastRequest
+    ): Response<CreateLiveBroadcastResponse>
+
+    @POST("liveStreams")
+    suspend fun createLiveStream(
+        @Header("Authorization") bearerToken: String,
+        @Query("part") part: String = "snippet,cdn,contentDetails",
+        @Body request: CreateLiveStreamRequest
+    ): Response<CreateLiveStreamResponse>
+
+    @POST("liveBroadcasts/bind")
+    suspend fun bindLiveBroadcast(
+        @Header("Authorization") bearerToken: String,
+        @Query("id") broadcastId: String,
+        @Query("streamId") streamId: String,
+        @Query("part") part: String = "id,contentDetails"
+    ): Response<YouTubeLiveBroadcastItem>
+
     @GET("liveBroadcasts")
     suspend fun getMyLiveBroadcasts(
         @Header("Authorization") bearerToken: String,
