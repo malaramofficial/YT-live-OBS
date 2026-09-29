@@ -276,6 +276,9 @@ class YouTubeRepository(private val context: Context) {
                         }
                         val delayMs = (body?.pollingIntervalMillis ?: 4000L).coerceAtLeast(1000L)
                         delay(delayMs)
+                    } else if (response.code() == 401 || response.code() == 403) {
+                        setConnectionError("YouTube chat authorization expired or was denied (${response.code()}). Reconnect YouTube.")
+                        break
                     } else {
                         delay(5000L)
                     }
