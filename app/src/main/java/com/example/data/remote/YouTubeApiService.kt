@@ -11,11 +11,11 @@ import retrofit2.http.Query
 interface YouTubeApiService {
 
     @GET("liveBroadcasts")
-    suspend fun getMyActiveLiveBroadcasts(
+    suspend fun getMyLiveBroadcasts(
         @Header("Authorization") bearerToken: String,
         @Query("part") part: String = "id,snippet,contentDetails,status",
-        @Query("broadcastStatus") broadcastStatus: String = "active",
-        @Query("mine") mine: Boolean = true
+        @Query("mine") mine: Boolean = true,
+        @Query("broadcastType") broadcastType: String = "all"
     ): Response<YouTubeLiveBroadcastListResponse>
 
     @POST("liveChat/messages")
