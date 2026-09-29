@@ -171,7 +171,7 @@ class YouTubeRepository(private val context: Context) {
     suspend fun checkVideoById(videoId: String, scope: CoroutineScope) {
         _connectionState.value = LiveConnectionState.Checking
         val token = _oauthToken.value.trim()
-        if (key.isBlank() && token.isBlank()) {
+        if (token.isBlank()) {
             _connectionState.value = LiveConnectionState.Error(
                 "YouTube authentication required. Connect Google / YouTube first."
             )
