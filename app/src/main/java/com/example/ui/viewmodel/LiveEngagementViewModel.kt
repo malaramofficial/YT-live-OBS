@@ -156,24 +156,6 @@ class LiveEngagementViewModel(application: Application) : AndroidViewModel(appli
         repository.checkActiveLiveStream(viewModelScope)
     }
 
-    fun startTestLiveMode() {
-        val testStream = LiveStreamInfo(
-            videoId = "demo_live_malaram",
-            title = "🌾 राजस्थान में आधुनिक कृषि तकनीक और किसान चर्चा | Malaram Live",
-            channelTitle = channelTitle.value,
-            thumbnailUrl = "",
-            isLive = true,
-            viewerCount = 1420,
-            likeCount = 538,
-            chatMessageCount = 1240,
-            startedAt = System.currentTimeMillis() - 22 * 60 * 1000,
-            activeLiveChatId = "test_chat_id",
-            streamQuality = "1080p60",
-            streamStatus = "🔴 LIVE"
-        )
-        repository.startLiveStream(testStream, viewModelScope)
-    }
-
     fun checkVideoById(videoId: String) {
         viewModelScope.launch {
             repository.checkVideoById(videoId, viewModelScope)
