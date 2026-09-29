@@ -3,14 +3,12 @@ package com.example.ui.screens
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,7 +25,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.HowToVote
 import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.Poll
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.StopCircle
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.Button
@@ -170,9 +167,7 @@ fun PollScreen(
 @Composable
 private fun ActivePollDisplayCard(
     poll: LivePoll,
-    onVote: (Int) -> Unit,
     onToggleActive: () -> Unit,
-    onReset: () -> Unit,
     onToggleOverlay: (Boolean) -> Unit
 ) {
     Card(
@@ -262,8 +257,7 @@ private fun ActivePollDisplayCard(
                     PollOptionBar(
                         option = option,
                         percentage = percentage,
-                        isActive = poll.isActive,
-                        onVote = { onVote(option.id) }
+                        isActive = poll.isActive
                     )
                 }
             }
@@ -299,19 +293,6 @@ private fun ActivePollDisplayCard(
                     )
                 }
 
-                OutlinedButton(
-                    onClick = onReset,
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary),
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp)
-                        .testTag("btn_reset_poll")
-                ) {
-                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("Reset Votes", fontSize = 12.sp)
-                }
             }
         }
     }
@@ -321,8 +302,7 @@ private fun ActivePollDisplayCard(
 private fun PollOptionBar(
     option: PollOption,
     percentage: Int,
-    isActive: Boolean,
-    onVote: () -> Unit
+    isActive: Boolean
 ) {
     val animatedProgress by animateFloatAsState(
         targetValue = percentage / 100f,
@@ -335,7 +315,6 @@ private fun PollOptionBar(
             .height(52.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(StudioCardBgElevated)
-            .clickable(enabled = isActive, onClick = onVote)
             .testTag("poll_option_${option.id}")
     ) {
         // Progress fill
@@ -512,48 +491,6 @@ private fun CreatePollCard(
                 Spacer(Modifier.width(8.dp))
                 Text("Start Live Poll", fontWeight = FontWeight.Bold, fontSize = 14.sp)
             }
-        }
-    }
-}
-
-@Composable
-private fun PresetPollItem(
-    title: String,
-    options: List<String>,
-    onClick: () -> Unit
-) {
-    Card(
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = StudioCardBg),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-    ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = title,
-                    color = TextPrimary,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "लागू करें",
-                    color = AccentBlue,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = options.joinToString(" • "),
-                color = TextSecondary,
-                fontSize = 12.sp
-            )
         }
     }
 }
