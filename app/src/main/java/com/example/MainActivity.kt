@@ -103,6 +103,8 @@ class MainActivity : ComponentActivity() {
                 viewModel.setConnectionError("Google/YouTube authorization was cancelled or denied.")
             }
         }
+    }
+
     private val viewModel: LiveEngagementViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
