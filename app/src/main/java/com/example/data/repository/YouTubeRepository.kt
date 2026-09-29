@@ -46,7 +46,7 @@ class YouTubeRepository(private val context: Context) {
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
         .addInterceptor(HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            level = HttpLoggingInterceptor.Level.NONE
         })
         .build()
 
@@ -123,8 +123,31 @@ class YouTubeRepository(private val context: Context) {
         val launchScope = scope ?: CoroutineScope(Dispatchers.IO)
         launchScope.launch {
             _connectionState.value = LiveConnectionState.Checking
+            val token = _oauthToken.value.trim()
             val key = _apiKey.value.trim()
             val chId = _channelId.value.trim()
+
+            if (token.isNotEmpty()) {
+                try {
+                    val response = apiService.getMyActiveLiveBroadcasts("Bearer $token")
+                    if (response.isSuccessful) {
+                        val broadcast = response.body()?.items?.firstOrNull()
+                        val videoId = broadcast?.id
+                        if (!videoId.isNullOrEmpty()) {
+                            fetchVideoDetails(videoId, key, token)
+                            return@launch
+                        }
+                        _connectionState.value = LiveConnectionState.NoActiveLive(
+                            "आपके YouTube चैनल पर अभी कोई active Live प्रसारण नहीं मिला।"
+                        )
+                        return@launch
+                    } else {
+                        Log.w("YouTubeRepo", "Authenticated live lookup failed: ${response.code()}")
+                    }
+                } catch (e: Exception) {
+                    Log.w("YouTubeRepo", "Authenticated live lookup error: ${e.javaClass.simpleName}")
+                }
+            }
 
             if (key.isNotEmpty() && chId.isNotEmpty() && !chId.startsWith("UC_MalaramOfficial")) {
                 try {
@@ -187,7 +210,7 @@ class YouTubeRepository(private val context: Context) {
         )
     }
 
-    private suspend fun fetchVideoDetails(videoId: String, apiKey: String) {
+    private suspend fun fetchVideoDetails(videoId: String, apiKey: String, bearerToken: String = "") {
         val detailsResponse = apiService.getVideoDetails(videoId = videoId, apiKey = apiKey)
         if (detailsResponse.isSuccessful) {
             val video = detailsResponse.body()?.items?.firstOrNull()
@@ -210,7 +233,7 @@ class YouTubeRepository(private val context: Context) {
                 if (isLiveNow) {
                     _connectionState.value = LiveConnectionState.Active(streamInfo)
                     if (streamInfo.activeLiveChatId.isNotEmpty()) {
-                        startRealChatPolling(streamInfo.activeLiveChatId, apiKey)
+                        startRealChatPolling(streamInfo.activeLiveChatId, apiKey, bearerToken)
                     }
                 } else {
                     _connectionState.value = LiveConnectionState.NoActiveLive(
@@ -231,7 +254,7 @@ class YouTubeRepository(private val context: Context) {
         startSimulationChatPolling(scope, streamInfo)
     }
 
-    private fun startRealChatPolling(liveChatId: String, apiKey: String) {
+    private fun startRealChatPolling(liveChatId: String, apiKey: String, bearerToken: String = "") {
         chatPollingJob?.cancel()
         chatPollingJob = CoroutineScope(Dispatchers.IO).launch {
             while (isActive) {
@@ -348,6 +371,64 @@ class YouTubeRepository(private val context: Context) {
                     )
                 }
             }
+        }
+    }
+
+    suspend fun createYouTubePoll(
+        question: String,
+        options: List<String>
+    ): Result<String> {
+        val token = _oauthToken.value.trim()
+        val chatId = (_connectionState.value as? LiveConnectionState.Active)
+            ?.streamInfo?.activeLiveChatId
+
+        if (token.isBlank()) return Result.failure(IllegalStateException("YouTube authorization required"))
+        if (chatId.isNullOrBlank()) return Result.failure(IllegalStateException("Active live chat not available"))
+
+        val cleanOptions = options.map { it.trim() }.filter { it.isNotBlank() }.take(4)
+        if (question.isBlank() || cleanOptions.size !in 2..4) {
+            return Result.failure(IllegalArgumentException("Poll needs 2 to 4 non-empty options"))
+        }
+
+        return try {
+            val response = apiService.insertLivePoll(
+                bearerToken = "Bearer $token",
+                request = com.example.data.remote.CreateLivePollRequest(
+                    snippet = com.example.data.remote.CreateLivePollSnippet(
+                        liveChatId = chatId,
+                        pollDetails = com.example.data.remote.PollDetails(
+                            metadata = com.example.data.remote.PollMetadata(
+                                questionText = question.trim(),
+                                options = cleanOptions.map { com.example.data.remote.PollOptionRequest(it) }
+                            )
+                        )
+                    )
+                )
+            )
+            if (response.isSuccessful) {
+                Result.success(response.body()?.id ?: "")
+            } else {
+                Result.failure(IllegalStateException("YouTube poll failed: HTTP ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun closeYouTubePoll(messageId: String): Result<Unit> {
+        val token = _oauthToken.value.trim()
+        if (token.isBlank()) return Result.failure(IllegalStateException("YouTube authorization required"))
+        if (messageId.isBlank()) return Result.failure(IllegalArgumentException("Poll message ID missing"))
+
+        return try {
+            val response = apiService.closeLivePoll(
+                bearerToken = "Bearer $token",
+                messageId = messageId
+            )
+            if (response.isSuccessful) Result.success(Unit)
+            else Result.failure(IllegalStateException("YouTube poll close failed: HTTP ${response.code()}"))
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 
