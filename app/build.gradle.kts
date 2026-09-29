@@ -79,7 +79,6 @@ dependencies {
   implementation(libs.coil.compose)
   implementation(libs.converter.moshi)
   // Uncomment to use Firestore:
-  // implementation(libs.firebase.firestore)
 
   implementation(libs.kotlinx.coroutines.android)
   implementation(libs.kotlinx.coroutines.core)
