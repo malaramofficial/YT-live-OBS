@@ -82,7 +82,7 @@ fun PollScreen(
 
     var showCreateForm by remember { mutableStateOf(false) }
     var newQuestion by remember { mutableStateOf("") }
-    val newOptions = remember { mutableStateListOf("खेती", "Gaming", "Comedy", "Technology") }
+    val newOptions = remember { mutableStateListOf("", "") }
 
     LazyColumn(
         modifier = modifier
@@ -96,9 +96,7 @@ fun PollScreen(
         item {
             ActivePollDisplayCard(
                 poll = currentPoll,
-                onVote = { optionId -> viewModel.votePollOption(optionId) },
                 onToggleActive = { viewModel.togglePollActive() },
-                onReset = { viewModel.resetPollVotes() },
                 onToggleOverlay = { show -> viewModel.togglePollOverlay(show) }
             )
         }
