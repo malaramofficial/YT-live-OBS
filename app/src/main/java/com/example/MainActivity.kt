@@ -87,18 +87,22 @@ class MainActivity : ComponentActivity() {
         registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK && result.data != null) {
                 runCatching {
-                    Identity.getAuthorizationClient(this)
-                        .getAuthorizationResultFromIntent(result.data)
+                    Identity.getAuthorizationClient(this).getAuthorizationResultFromIntent(result.data)
                 }.onSuccess { authResult ->
                     val token = authResult.accessToken
                     if (!token.isNullOrBlank()) {
                         viewModel.setOAuthToken(token)
                         viewModel.connectYouTube()
+                    } else {
+                        viewModel.setConnectionError("Google authorization returned no YouTube access token.")
                     }
+                }.onFailure {
+                    viewModel.setConnectionError("Google/YouTube authorization failed. Please try Connect YouTube again.")
                 }
+            } else {
+                viewModel.setConnectionError("Google/YouTube authorization was cancelled or denied.")
             }
         }
-
     private val viewModel: LiveEngagementViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
