@@ -95,7 +95,7 @@ class OverlayWebServer(
 
             val bytes = body.toByteArray(StandardCharsets.UTF_8)
             val writer = PrintWriter(OutputStreamWriter(s.getOutputStream(), StandardCharsets.US_ASCII))
-            writer.print("HTTP/1.1 " + if (ok) "200 OK" else "404 Not Found" + "\r\n")
+            writer.print("HTTP/1.1 " + (if (ok) "200 OK" else "404 Not Found") + "\r\n")
             writer.print("Content-Type: " + contentType + "\r\n")
             writer.print("Content-Length: " + bytes.size + "\r\n")
             writer.print("Cache-Control: no-store\r\n")
