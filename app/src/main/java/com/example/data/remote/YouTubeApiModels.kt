@@ -92,10 +92,29 @@ data class YouTubeVideoStatistics(
 )
 
 @JsonClass(generateAdapter = true)
+data class YouTubePollDetails(
+    @Json(name = "metadata") val metadata: YouTubePollMetadata?,
+    @Json(name = "status") val status: String?
+)
+
+@JsonClass(generateAdapter = true)
+data class YouTubePollMetadata(
+    @Json(name = "questionText") val questionText: String?,
+    @Json(name = "options") val options: List<YouTubePollOption>?
+)
+
+@JsonClass(generateAdapter = true)
+data class YouTubePollOption(
+    @Json(name = "optionText") val optionText: String?,
+    @Json(name = "tally") val tally: String?
+)
+
+@JsonClass(generateAdapter = true)
 data class YouTubeLiveChatMessagesResponse(
     @Json(name = "items") val items: List<YouTubeLiveChatMessageItem>?,
     @Json(name = "nextPageToken") val nextPageToken: String?,
-    @Json(name = "pollingIntervalMillis") val pollingIntervalMillis: Long?
+    @Json(name = "pollingIntervalMillis") val pollingIntervalMillis: Long?,
+    @Json(name = "activePollItem") val activePollItem: YouTubeLiveChatMessageItem?
 )
 
 @JsonClass(generateAdapter = true)
@@ -111,7 +130,8 @@ data class LiveChatMessageSnippet(
     @Json(name = "publishedAt") val publishedAt: String?,
     @Json(name = "displayMessage") val displayMessage: String?,
     @Json(name = "textMessageDetails") val textMessageDetails: TextMessageDetails?,
-    @Json(name = "superChatDetails") val superChatDetails: SuperChatDetails?
+    @Json(name = "superChatDetails") val superChatDetails: SuperChatDetails?,
+    @Json(name = "pollDetails") val pollDetails: YouTubePollDetails?
 )
 
 @JsonClass(generateAdapter = true)
