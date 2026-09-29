@@ -1,7 +1,8 @@
-package com.example
+package com.malaramofficial.ytliveobs
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import com.malaramofficial.ytliveobs.R
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
