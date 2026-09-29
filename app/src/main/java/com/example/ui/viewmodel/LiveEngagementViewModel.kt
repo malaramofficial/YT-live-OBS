@@ -144,14 +144,17 @@ class LiveEngagementViewModel(application: Application) : AndroidViewModel(appli
         _currentTab.value = tab
     }
 
-    fun connectYouTube(channelName: String = "Malaram Official", channelId: String = "") {
+    fun connectYouTube(channelName: String = "", channelId: String = "") {
         repository.connectYouTube(viewModelScope, channelName, channelId)
     }
 
     fun disconnectYouTube() {
         repository.disconnectYouTube()
     }
-\n    fun setConnectionError(message: String) {\n        repository.setConnectionError(message)\n    }\n
+\n    fun setConnectionError(message: String) {
+        repository.setConnectionError(message)
+    }
+
     fun checkActiveLive() {
         repository.checkActiveLiveStream(viewModelScope)
     }
@@ -184,12 +187,16 @@ class LiveEngagementViewModel(application: Application) : AndroidViewModel(appli
     }
 
     fun deleteMessage(messageId: String) {
-        repository.deleteMessage(messageId, viewModelScope)
+        viewModelScope.launch {
+            repository.deleteMessage(messageId)
+        }
     }
 
     fun sendChatReply(text: String) {
         if (text.isNotBlank()) {
-            repository.sendReplyMessage(text, viewModelScope)
+            viewModelScope.launch {
+                repository.sendReplyMessage(text)
+            }
         }
     }
 
@@ -284,24 +291,6 @@ class LiveEngagementViewModel(application: Application) : AndroidViewModel(appli
         }
     }
 
-    fun votePollOption(optionId: Int, isAudience: Boolean = false) {
-        // Local voting is only a preview interaction. Real audience votes are owned by YouTube.
-        if (isAudience) return
-        val poll = _currentPoll.value
-        if (!poll.isActive) return
-        val updatedOptions = poll.options.map {
-            if (it.id == optionId) it.copy(votes = it.votes + 1) else it
-        }
-        _currentPoll.value = poll.copy(options = updatedOptions)
-    }
-
-    fun resetPollVotes() {
-        // Do not invent or reset YouTube-owned audience totals.
-        _currentPoll.value = _currentPoll.value.copy(
-            options = _currentPoll.value.options.map { it.copy(votes = 0) }
-        )
-    }
-
     fun togglePollActive() {
         val poll = _currentPoll.value
         if (!poll.isActive) return
@@ -314,18 +303,20 @@ class LiveEngagementViewModel(application: Application) : AndroidViewModel(appli
     // Announcement Actions
     fun broadcastAnnouncement(emoji: String, text: String) {
         if (text.isBlank()) return
-        val item = Announcement(
-            id = System.currentTimeMillis().toString(),
-            emoji = emoji,
-            text = text,
-            timestamp = System.currentTimeMillis(),
-            isActiveOnOverlay = true
-        )
-        _currentAnnouncement.value = item
-        _announcementsHistory.value = listOf(item) + _announcementsHistory.value.take(20)
-
-        // Also post to chat so audience sees it
-        repository.sendReplyMessage("$emoji Announcement: $text", viewModelScope)
+        viewModelScope.launch {
+            repository.sendReplyMessage("$emoji Announcement: $text")
+                .onSuccess {
+                    val item = Announcement(
+                        id = System.currentTimeMillis().toString(),
+                        emoji = emoji,
+                        text = text,
+                        timestamp = System.currentTimeMillis(),
+                        isActiveOnOverlay = true
+                    )
+                    _currentAnnouncement.value = item
+                    _announcementsHistory.value = listOf(item) + _announcementsHistory.value.take(20)
+                }
+        }
     }
 
     fun clearAnnouncement() {
