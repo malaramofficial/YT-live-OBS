@@ -10,6 +10,29 @@ import retrofit2.http.Query
 
 interface YouTubeApiService {
 
+    @GET("liveBroadcasts")
+    suspend fun getMyActiveLiveBroadcasts(
+        @Header("Authorization") bearerToken: String,
+        @Query("part") part: String = "id,snippet,contentDetails,status",
+        @Query("broadcastStatus") broadcastStatus: String = "active",
+        @Query("mine") mine: Boolean = true
+    ): Response<YouTubeLiveBroadcastListResponse>
+
+    @POST("liveChat/messages")
+    suspend fun insertLivePoll(
+        @Header("Authorization") bearerToken: String,
+        @Query("part") part: String = "snippet",
+        @Body request: CreateLivePollRequest
+    ): Response<YouTubeLiveChatMessageItem>
+
+    @POST("liveChat/messages/transition")
+    suspend fun closeLivePoll(
+        @Header("Authorization") bearerToken: String,
+        @Query("id") messageId: String,
+        @Query("status") status: String = "closed",
+        @Query("part") part: String = "snippet"
+    ): Response<YouTubeLiveChatMessageItem>
+
     @GET("search")
     suspend fun searchLiveVideo(
         @Query("part") part: String = "snippet",
