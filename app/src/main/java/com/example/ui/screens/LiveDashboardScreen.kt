@@ -535,7 +535,6 @@ private fun CheckingLiveCard() {
 private fun NoActiveLiveCard(
     message: String,
     onRefresh: () -> Unit,
-    onStartTestMode: () -> Unit,
     onCheckVideoId: (String) -> Unit
 ) {
     var videoIdInput by remember { mutableStateOf("") }
