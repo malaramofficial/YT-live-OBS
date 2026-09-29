@@ -1,0 +1,6 @@
+{
+  "name": "Malaram Live Engagement Tool",
+  "description": "YouTube Live Control Center for creators to manage Live Chat, Q&A, Polls, Announcements, and Overlay.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
