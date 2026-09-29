@@ -4,6 +4,8 @@ import android.content.Context
 import android.util.Log
 import com.example.data.model.ChatMessage
 import com.example.data.model.LiveStreamInfo
+import com.example.data.model.LivePoll
+import com.example.data.model.PollOption
 import com.example.data.remote.SendChatMessageRequest
 import com.example.data.remote.SendChatMessageSnippet
 import com.example.data.remote.TextMessageDetails
@@ -84,6 +86,9 @@ class YouTubeRepository(private val context: Context) {
     private var isSimulationMode = false
     private var nextPageToken: String? = null
 
+    private val _activePoll = MutableStateFlow<LivePoll?>(null)
+    val activePoll: StateFlow<LivePoll?> = _activePoll.asStateFlow()
+
     init {
         if (_isAccountConnected.value) {
             checkActiveLiveStream()
@@ -113,6 +118,7 @@ class YouTubeRepository(private val context: Context) {
 
     fun disconnectYouTube() {
         stopChatPolling()
+        _activePoll.value = null
         _isAccountConnected.value = false
         _connectionState.value = LiveConnectionState.Disconnected
         _chatMessages.value = emptyList()
@@ -215,7 +221,11 @@ class YouTubeRepository(private val context: Context) {
     }
 
     private suspend fun fetchVideoDetails(videoId: String, apiKey: String, bearerToken: String = "") {
-        val detailsResponse = apiService.getVideoDetails(videoId = videoId, apiKey = apiKey)
+        val detailsResponse = apiService.getVideoDetails(
+            bearerToken = bearerToken.takeIf { it.isNotBlank() }?.let { "Bearer $it" },
+            videoId = videoId,
+            apiKey = apiKey
+        )
         if (detailsResponse.isSuccessful) {
             val video = detailsResponse.body()?.items?.firstOrNull()
             if (video != null) {
@@ -272,6 +282,7 @@ class YouTubeRepository(private val context: Context) {
                     if (response.isSuccessful) {
                         val body = response.body()
                         nextPageToken = body?.nextPageToken
+                        syncActivePoll(body?.activePollItem)
                         val newItems = body?.items ?: emptyList()
                         val parsed = newItems.map { item ->
                             val snippet = item.snippet
@@ -377,6 +388,29 @@ class YouTubeRepository(private val context: Context) {
                 }
             }
         }
+    }
+
+    private fun syncActivePoll(item: com.example.data.remote.YouTubeLiveChatMessageItem?) {
+        val details = item?.snippet?.pollDetails
+        val metadata = details?.metadata
+        if (item?.id.isNullOrBlank() || metadata?.questionText.isNullOrBlank()) {
+            if (details == null) _activePoll.value = null
+            return
+        }
+        val options = metadata.options.orEmpty().mapIndexed { index, option ->
+            PollOption(
+                id = index + 1,
+                text = option.optionText.orEmpty(),
+                votes = option.tally?.toIntOrNull() ?: 0
+            )
+        }
+        _activePoll.value = LivePoll(
+            id = item.id!!,
+            question = metadata.questionText!!,
+            options = options,
+            isActive = details.status?.equals("active", ignoreCase = true) == true,
+            showOnOverlay = true
+        )
     }
 
     suspend fun createYouTubePoll(
