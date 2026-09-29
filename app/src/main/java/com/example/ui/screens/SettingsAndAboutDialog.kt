@@ -65,6 +65,7 @@ import com.example.ui.viewmodel.LiveEngagementViewModel
 @Composable
 fun SettingsAndAboutDialog(
     viewModel: LiveEngagementViewModel,
+    onConnectYouTube: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val currentTitle by viewModel.channelTitle.collectAsState()
@@ -213,6 +214,31 @@ fun SettingsAndAboutDialog(
                         focusedTextColor = TextPrimary,
                         unfocusedTextColor = TextPrimary
                     )
+                )
+
+                Button(
+                    onClick = onConnectYouTube,
+                    colors = ButtonDefaults.buttonColors(containerColor = YouTubeRed),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(46.dp)
+                        .testTag("btn_connect_youtube")
+                ) {
+                    Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(17.dp))
+                    Spacer(Modifier.width(7.dp))
+                    Text(
+                        if (isConnected && currentToken.isNotBlank()) "YouTube Connected" else "Connect Google / YouTube",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
+                    )
+                }
+
+                Text(
+                    text = "Google authorization is used for your YouTube account. Manual OAuth tokens are kept only as an advanced fallback.",
+                    color = TextTertiary,
+                    fontSize = 10.sp,
+                    lineHeight = 14.sp
                 )
 
                 OutlinedTextField(
