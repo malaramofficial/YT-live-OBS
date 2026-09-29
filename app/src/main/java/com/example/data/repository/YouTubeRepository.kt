@@ -364,8 +364,10 @@ class YouTubeRepository(private val context: Context) {
                 bearerToken = "Bearer $token",
                 messageId = messageId
             )
-            if (response.isSuccessful) Result.success(Unit)
-            else Result.failure(IllegalStateException("YouTube poll close failed: HTTP ${response.code()}"))
+            if (response.isSuccessful) {
+                _activePoll.value = null
+                Result.success(Unit)
+            } else Result.failure(IllegalStateException("YouTube poll close failed: HTTP ${response.code()}"))
         } catch (e: Exception) {
             Result.failure(e)
         }
