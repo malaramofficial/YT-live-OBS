@@ -21,6 +21,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import org.json.JSONArray
+import org.json.JSONObject
 
 enum class ScreenTab(val title: String, val tabLabel: String) {
     LIVE("Malaram Live", "LIVE"),
@@ -104,6 +106,43 @@ class LiveEngagementViewModel(application: Application) : AndroidViewModel(appli
         )
     )
     val overlayConfig: StateFlow<OverlayConfig> = _overlayConfig.asStateFlow()
+
+    private var overlayServer: OverlayWebServer? = null
+    private val _overlayServerUrl = MutableStateFlow<String?>(null)
+    val overlayServerUrl: StateFlow<String?> = _overlayServerUrl.asStateFlow()
+
+    fun startOverlayServer(): Boolean {
+        if (overlayServer?.isRunning() == true) return true
+        val server = OverlayWebServer(port = 8080) { buildOverlayStateJson() }
+        if (!server.start()) return false
+        overlayServer = server
+        _overlayServerUrl.value = server.localUrl()
+        return _overlayServerUrl.value != null
+    }
+
+    fun stopOverlayServer() {
+        overlayServer?.stop()
+        overlayServer = null
+        _overlayServerUrl.value = null
+    }
+
+    private fun buildOverlayStateJson(): String {
+        val stream = (connectionState.value as? LiveConnectionState.Active)?.streamInfo
+        val poll = currentPoll.value
+        val root = JSONObject()
+            .put("channel", channelTitle.value)
+            .put("viewers", stream?.viewerCount ?: 0L)
+            .put("live", stream?.isLive == true)
+            .put("question", spotlightQuestion.value?.questionText ?: "")
+            .put("announcement", currentAnnouncement.value?.text ?: "")
+        val pollArray = JSONArray()
+        poll?.options?.forEach {
+            pollArray.put(JSONObject().put("text", it.text).put("votes", it.votes))
+        }
+        root.put("poll", pollArray)
+        return root.toString()
+    }
+
 
     init {
         viewModelScope.launch {
