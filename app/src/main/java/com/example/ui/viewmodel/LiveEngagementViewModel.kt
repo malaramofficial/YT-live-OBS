@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.local.AppDatabase
+import com.example.data.local.OverlayWebServer
 import com.example.data.local.QnaEntity
 import com.example.data.model.Announcement
 import com.example.data.model.ChatMessage
@@ -398,6 +399,10 @@ class LiveEngagementViewModel(application: Application) : AndroidViewModel(appli
     // Overlay Actions
     fun updateOverlayTheme(theme: OverlayTheme) {
         _overlayConfig.value = _overlayConfig.value.copy(theme = theme)
+    }
+
+    fun togglePollOverlay(show: Boolean) {
+        _currentPoll.value = _currentPoll.value.copy(showOnOverlay = show)
     }
 
     fun toggleOverlayElement(element: String, enabled: Boolean) {
