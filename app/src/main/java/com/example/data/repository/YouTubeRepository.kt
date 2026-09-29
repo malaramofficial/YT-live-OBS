@@ -409,7 +409,7 @@ class YouTubeRepository(private val context: Context) {
             id = item.id!!,
             question = metadata.questionText!!,
             options = options,
-            isActive = details.status?.equals("active", ignoreCase = true) == true,
+            isActive = metadata.status?.equals("active", ignoreCase = true) == true,
             showOnOverlay = true
         )
     }
