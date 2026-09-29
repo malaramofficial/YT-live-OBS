@@ -76,9 +76,6 @@ class YouTubeRepository(private val context: Context) {
     private val _channelId = MutableStateFlow(sharedPrefs.getString("channel_id", "") ?: "")
     val channelId: StateFlow<String> = _channelId.asStateFlow()
 
-    private val _apiKey = MutableStateFlow(sharedPrefs.getString("api_key", "") ?: "")
-    val apiKey: StateFlow<String> = _apiKey.asStateFlow()
-
     private val _oauthToken = MutableStateFlow(loadOAuthToken())
     val oauthToken: StateFlow<String> = _oauthToken.asStateFlow()
 
@@ -108,13 +105,11 @@ class YouTubeRepository(private val context: Context) {
     fun saveCredentials(channelName: String, channelIdVal: String, tokenVal: String) {
         _channelTitle.value = channelName
         _channelId.value = channelIdVal
-        _apiKey.value = apiKeyVal
         _oauthToken.value = tokenVal
         secureTokenStore.save(tokenVal)
         sharedPrefs.edit()
             .putString("channel_title", channelName)
             .putString("channel_id", channelIdVal)
-            .putString("api_key", apiKeyVal)
             .remove("oauth_token")
             .apply()
     }
