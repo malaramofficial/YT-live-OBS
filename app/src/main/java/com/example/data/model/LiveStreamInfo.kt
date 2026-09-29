@@ -3,7 +3,7 @@ package com.example.data.model
 data class LiveStreamInfo(
     val videoId: String = "",
     val title: String = "",
-    val channelTitle: String = "Malaram Official",
+    val channelTitle: String = "",
     val channelId: String = "",
     val thumbnailUrl: String = "",
     val isLive: Boolean = false,
@@ -12,6 +12,6 @@ data class LiveStreamInfo(
     val chatMessageCount: Long = 0,
     val startedAt: Long = 0,
     val activeLiveChatId: String = "",
-    val streamQuality: String = "1080p60",
-    val streamStatus: String = "Live Active"
+    val streamQuality: String = "",
+    val streamStatus: String = ""
 )
