@@ -603,19 +603,6 @@ private fun NoActiveLiveCard(
                     Text("Check Again", color = TextPrimary)
                 }
 
-                Button(
-                    onClick = onStartTestMode,
-                    colors = ButtonDefaults.buttonColors(containerColor = YouTubeRed),
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp)
-                        .testTag("btn_start_demo_live")
-                ) {
-                    Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Test Live Run", fontWeight = FontWeight.Bold)
-                }
             }
 
             Spacer(Modifier.height(12.dp))
