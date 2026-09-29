@@ -165,8 +165,10 @@ class YouTubeRepository(private val context: Context) {
                     } else {
                         _connectionState.value = LiveConnectionState.NoActiveLive("Your YouTube account is connected, but no active Live broadcast was found.")
                     }
+                } else if (response.code() == 401 || response.code() == 403) {
+                    setConnectionError("YouTube authorization expired or was denied (${response.code()}). Reconnect YouTube.")
                 } else {
-                    _connectionState.value = LiveConnectionState.Error("YouTube authorization/API error (${response.code()}). ${response.message()}")
+                    _connectionState.value = LiveConnectionState.Error("YouTube API error (${response.code()}). ${response.message()}")
                 }
             } catch (e: Exception) {
                 _connectionState.value = LiveConnectionState.Error("Unable to reach YouTube: ${e.message ?: e.javaClass.simpleName}")
@@ -196,7 +198,11 @@ class YouTubeRepository(private val context: Context) {
     private suspend fun fetchVideoDetails(videoId: String, bearerToken: String) {
         val response = apiService.getVideoDetails(bearerToken = "Bearer $bearerToken", videoId = videoId)
         if (!response.isSuccessful) {
-            _connectionState.value = LiveConnectionState.Error("YouTube video lookup failed (${response.code()}). ${response.message()}")
+            if (response.code() == 401 || response.code() == 403) {
+                setConnectionError("YouTube authorization expired or was denied (${response.code()}). Reconnect YouTube.")
+            } else {
+                _connectionState.value = LiveConnectionState.Error("YouTube video lookup failed (${response.code()}). ${response.message()}")
+            }
             return
         }
         val video = response.body()?.items?.firstOrNull()
