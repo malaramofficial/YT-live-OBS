@@ -108,6 +108,7 @@ fun OverlayPreviewScreen(
     val currentAnnouncement by viewModel.currentAnnouncement.collectAsState()
     val connectionState by viewModel.connectionState.collectAsState()
     val channelTitle by viewModel.channelTitle.collectAsState()
+    val overlayServerUrl by viewModel.overlayServerUrl.collectAsState()
 
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -461,36 +462,62 @@ fun OverlayPreviewScreen(
                         )
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            text = "OBS में 'Browser Source' जोड़ें और 1920x1080 रेजोल्यूशन सेट करें:",
+                            text = "पहले overlay server शुरू करें। फिर OBS PC को इसी Wi-Fi/Hotspot network पर जोड़कर नीचे वाला Browser Source URL इस्तेमाल करें:",
                             color = TextSecondary,
                             fontSize = 12.sp
                         )
-                        Spacer(Modifier.height(8.dp))
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(StudioBlack, RoundedCornerShape(8.dp))
-                                .padding(10.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "http://localhost:8080/overlay?theme=${overlayConfig.theme.name.lowercase()}",
-                                color = AccentBlue,
-                                fontSize = 11.sp,
-                                modifier = Modifier.weight(1f)
-                            )
-                            IconButton(
-                                onClick = {
-                                    clipboardManager.setText(
-                                        AnnotatedString("http://localhost:8080/overlay?theme=${overlayConfig.theme.name.lowercase()}")
+                        Spacer(Modifier.height(10.dp))
+                        Button(
+                            onClick = {
+                                val started = if (overlayServerUrl == null) {
+                                    viewModel.startOverlayServer()
+                                } else {
+                                    viewModel.stopOverlayServer()
+                                    false
+                                }
+                                scope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        if (started) "OBS overlay server started" else if (overlayServerUrl != null) "OBS overlay server stopped" else "Server start failed"
                                     )
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar("OBS Link Copied!")
-                                    }
-                                },
-                                modifier = Modifier.size(28.dp)
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (overlayServerUrl != null) LiveRed else YouTubeRed
+                            ),
+                            modifier = Modifier.fillMaxWidth().testTag("btn_overlay_server")
+                        ) {
+                            Icon(
+                                imageVector = if (overlayServerUrl != null) Icons.Default.Clear else Icons.Default.Visibility,
+                                contentDescription = null
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(if (overlayServerUrl != null) "Stop OBS Overlay Server" else "Start OBS Overlay Server")
+                        }
+
+                        if (overlayServerUrl != null) {
+                            Spacer(Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(StudioBlack, RoundedCornerShape(8.dp))
+                                    .padding(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Default.ContentCopy, contentDescription = "Copy", tint = TextSecondary, modifier = Modifier.size(16.dp))
+                                Text(
+                                    text = overlayServerUrl!!,
+                                    color = AccentBlue,
+                                    fontSize = 11.sp,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                IconButton(
+                                    onClick = {
+                                        clipboardManager.setText(AnnotatedString(overlayServerUrl!!))
+                                        scope.launch { snackbarHostState.showSnackbar("OBS Link Copied!") }
+                                    },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(Icons.Default.ContentCopy, contentDescription = "Copy", tint = TextSecondary, modifier = Modifier.size(16.dp))
+                                }
                             }
                         }
                     }
