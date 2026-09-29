@@ -1,7 +1,10 @@
 package com.example
 
+import android.app.Activity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -50,6 +53,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.repository.LiveConnectionState
+import com.google.android.gms.auth.api.identity.AuthorizationRequest
+import com.google.android.gms.auth.api.identity.Identity
+import com.google.android.gms.common.api.Scope
 import com.example.ui.screens.LiveChatScreen
 import com.example.ui.screens.LiveDashboardScreen
 import com.example.ui.screens.OverlayPreviewScreen
@@ -73,6 +79,26 @@ import com.example.ui.viewmodel.ScreenTab
 
 class MainActivity : ComponentActivity() {
 
+    companion object {
+        private const val YOUTUBE_SCOPE = "https://www.googleapis.com/auth/youtube"
+    }
+
+    private val youtubeAuthorizationLauncher =
+        registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK && result.data != null) {
+                runCatching {
+                    Identity.getAuthorizationClient(this)
+                        .getAuthorizationResultFromIntent(result.data)
+                }.onSuccess { authResult ->
+                    val token = authResult.accessToken
+                    if (!token.isNullOrBlank()) {
+                        viewModel.setOAuthToken(token)
+                        viewModel.connectYouTube()
+                    }
+                }
+            }
+        }
+
     private val viewModel: LiveEngagementViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -80,15 +106,40 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MalaramLiveTheme {
-                MainAppScreen(viewModel = viewModel)
+                MainAppScreen(
+                    viewModel = viewModel,
+                    onConnectYouTube = ::authorizeYouTube
+                )
             }
         }
+    }
+
+    private fun authorizeYouTube() {
+        val request = AuthorizationRequest.Builder()
+            .setRequestedScopes(listOf(Scope(YOUTUBE_SCOPE)))
+            .build()
+
+        Identity.getAuthorizationClient(this)
+            .authorize(request)
+            .addOnSuccessListener { result ->
+                if (result.hasResolution() && result.pendingIntent != null) {
+                    youtubeAuthorizationLauncher.launch(
+                        IntentSenderRequest.Builder(result.pendingIntent!!.intentSender).build()
+                    )
+                } else {
+                    result.accessToken?.takeIf { it.isNotBlank() }?.let { token ->
+                        viewModel.setOAuthToken(token)
+                        viewModel.connectYouTube()
+                    }
+                }
+            }
+    }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainAppScreen(viewModel: LiveEngagementViewModel) {
+fun MainAppScreen(\n    viewModel: LiveEngagementViewModel,\n    onConnectYouTube: () -> Unit\n) {
     val currentTab by viewModel.currentTab.collectAsState()
     val connectionState by viewModel.connectionState.collectAsState()
     val qnaList by viewModel.qnaList.collectAsState()
@@ -372,6 +423,7 @@ fun MainAppScreen(viewModel: LiveEngagementViewModel) {
     if (showSettingsDialog) {
         SettingsAndAboutDialog(
             viewModel = viewModel,
+            onConnectYouTube = onConnectYouTube,
             onDismiss = { showSettingsDialog = false }
         )
     }
